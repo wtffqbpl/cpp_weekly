@@ -9,7 +9,7 @@ public:
 
   // explicit-one-agument ctor.
   // 声明不能隐式地将其他类型转换到该类型.
-  explicit Fraction(int num, int den = 1)
+  explicit Fraction(const int num, const int den = 1)
       : numerator_(num), denominator_(den) {}
 
   operator double() const {
