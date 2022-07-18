@@ -10,7 +10,8 @@ int main() {
     // return x + y;
   // };
 
-  std::function<int (const int, const int)> func;
+  // kstd::function<int (const int, const int)> func;
 
-  return func(4, 5);
+  // return func(4, 5);
+  return 0;
 }

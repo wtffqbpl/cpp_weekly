@@ -4,11 +4,13 @@ project(cpp_weekly)
 
 add_custom_target(test)
 
+set(CMAKE_CXX_FLAGS "-std=c++17")
+
 macro(add_test_target _src_list _prefix)
   foreach(_afile ${_src_list})
     get_filename_component(_target ${_afile} NAME_WE)
     add_custom_target(${_prefix}-${_target}-test
-      COMMAND ${CMAKE_CXX_COMPILER} -O2 ${CMAKE_CURRENT_SOURCE_DIR}/${afile} -o ${_target} -std=c++17
+      COMMAND ${CMAKE_CXX_COMPILER} -O2 ${CMAKE_CURRENT_SOURCE_DIR}/${_afile} -o ${_target} -std=c++17
       COMMAND ./${_target}
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     add_dependencies(test ${_prefix}-${_target}-test)

@@ -25,12 +25,12 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+      - name: Configure CMake
+        # Configure CMake in a 'build' subdiretory. `CMAKE_BUILD_TYPE` is only requrired if you
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+      - name: Test
+        # Build your program with the given configuration.
+        working-directory: ${{github.workspace}}/build
+        # Execute tests difined by the CMake configuration.
+        run: make test
