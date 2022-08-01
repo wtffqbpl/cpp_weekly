@@ -25,5 +25,6 @@ add_subdirectory(io)
 add_subdirectory(misc)
 add_subdirectory(pointer_like_classes)
 add_subdirectory(stl)
+add_subdirectory(strings)
 add_subdirectory(template)
 
