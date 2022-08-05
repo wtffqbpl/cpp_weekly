@@ -1,3 +1,4 @@
+#include <gtest/gtest.h>
 #include <iostream>
 
 class stone {
@@ -24,15 +25,13 @@ inline const T& min(const T& a, const T& b) {
   return b < a ? b : a;
 }
 
-int main() {
-  stone r1(2, 3), r2(3, 3), r3;
+TEST(ClassTemplate, argumentDeductionTest){
+  stone r1{2, 3}, r2{3, 3}, r3;
 
   // step 1: compiler会实参推导 (argument deduction)
   r3 = min(r1, r2);
 
-  std::cout << "(width, height, weight) = (" <<
-    r3.width() << ", " << r3.height() << ", " << r3.weight() << ")"
-    << std::endl;
-
-  return 0;
+  EXPECT_EQ(r3.width(), 2);
+  EXPECT_EQ(r3.height(), 3);
+  EXPECT_EQ(r3.weight(), 0);
 }

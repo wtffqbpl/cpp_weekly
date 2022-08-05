@@ -36,4 +36,4 @@ struct __my_list_iterator {
   }
 };
 
-int main() { return 0; }
+int iterator_test_dummy() { return 0; }

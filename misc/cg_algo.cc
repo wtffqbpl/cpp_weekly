@@ -99,7 +99,7 @@ int conjugate_gradient(const Matrix &A, Vector &x, const Vector &b,
   }
 }
 
-    int main() {
+int main() {
   int size = 100;
 
   double *x = new double[size];

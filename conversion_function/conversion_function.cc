@@ -1,3 +1,4 @@
+#include <gtest/gtest.h>
 #include <iostream>
 
 class Fraction {
@@ -15,6 +16,9 @@ public:
   operator double() const {
     return static_cast<double>(numerator_) / denominator_;
   }
+  operator int() const {
+    return static_cast<int>(numerator_ / denominator_);
+  }
 
   Fraction operator+(const Fraction &f) {
     return Fraction(this->num() + f.num(), this->den() + f.den());
@@ -29,13 +33,16 @@ private:
   int denominator_; //
 };
 
-int main() {
+TEST(HelloTest, BasicAssertions) {
+  // Expect two strings not to be equal.
+  EXPECT_STRNE("hello", "world");
+  // Expect equality.
+  EXPECT_EQ(7 * 6, 42);
+}
 
-  Fraction f{3, 5};
-
-  double d = 4 + f;
-
-  std::cout << "result = " << d << std::endl;
-
-  return 0;
+TEST(Conversion_Function, conversionAdd) {
+  Fraction f1{3, 5};
+  Fraction f2{4};
+  int d = f1 + f2;
+  EXPECT_EQ(d, 1);
 }

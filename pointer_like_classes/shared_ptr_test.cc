@@ -1,3 +1,4 @@
+#include <gtest/gtest.h>
 #include <iostream>
 
 // 通过这种方式来代理原来的指针。
@@ -19,10 +20,13 @@ struct Foo {
   void method(void) { std::cout << "Foo method." << std::endl; }
 };
 
-int main() {
+TEST(PointerLikeClass, shared_ptrTest) {
   my_shared_ptr<Foo> sp(new Foo);
+  std::string expected_str = "Foo method.\n";
 
+  testing::internal::CaptureStdout();
   sp->method();
+  std::string act_output = testing::internal::GetCapturedStdout();
 
-  return 0;
+  EXPECT_TRUE(expected_str == act_output);
 }

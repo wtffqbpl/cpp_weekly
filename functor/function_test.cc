@@ -1,3 +1,4 @@
+#include <gtest/gtest.h>
 #include <iostream>
 
 template <typename T>
@@ -22,10 +23,8 @@ struct Select1st {
   }
 };
 
-int main() {
+TEST(Functor, Functor_Test1) {
   Identity<int> a;
   int b = a(10);
-  std::cout << "b(Identity<int>(10)) = " << b << std::endl;
-
-  return 0;
+  EXPECT_EQ(b, 10);
 }

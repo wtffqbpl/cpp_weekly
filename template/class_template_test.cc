@@ -1,3 +1,4 @@
+#include <gtest/gtest.h>
 #include <iostream>
 
 template <typename T>
@@ -15,15 +16,10 @@ private:
   friend complex &__doapl(complex *, const complex &);
 };
 
-int main() {
-  complex<double> c1(2.5, 1.5);
+TEST(ClassTemplate, Test1) {
+  // complex<double> c1(2.5, 1.5);
   complex<int> c2(2, 6);
 
-  std::cout << "DOUBLE: c(2.5, 1.5): REAL = " <<
-      c1.real() << ", IMAG = " << c1.imag() << std::endl;
-
-  std::cout << "INT: c(2, 6): REAL = " << c2.real() << ", IMAG = " << c2.imag()
-            << std::endl;
-
-  return 0;
+  EXPECT_EQ(c2.real(), 2);
+  EXPECT_EQ(c2.imag(), 6);
 }

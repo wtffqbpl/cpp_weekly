@@ -1,8 +1,9 @@
+#include <gtest/gtest.h>
 #include <iostream>
 #include <string>
 #include <vector>
 
-int main() {
+void string_loop_test() {
   const std::string delims(" \t,.;");
 
   // for every line read successfully.
@@ -35,8 +36,16 @@ int main() {
       // search beginning of the next word.
       begIdx = line.find_first_not_of(delims, endIdx);
     }
-
   }
+}
 
-  return 0;
+TEST(String, stringLoopTest) {
+  std::string expected_output = "stop & snap I was a deer reviled on step gateman no repaid ";
+
+  testing::internal::CaptureStdout();
+  string_loop_test();
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+  std::cout << act_output << std::endl;
+  EXPECT_TRUE(act_output == expected_output);
 }
