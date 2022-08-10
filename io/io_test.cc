@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <ctime>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -43,5 +44,61 @@ TEST(IOTest, streamTest) {
   std::cout << expected_str << std::endl;
   std::cout << act_output << std::endl;
 
-EXPECT_TRUE(act_output == expected_str);
+  EXPECT_TRUE(act_output == expected_str);
+}
+
+/*
+ * @brief: 测试std::endl 作为换行符时的耗时问题
+ *    std::cout << "hello world" << std::endl;
+ *    上面这句其实等价于:
+ *    std::cout << "hello world" << "\n";
+ *    std::flush(std::cout);
+ *    此外，"\n" 可以替换成 '\n' 这种char，这样速度更快。
+ */
+TEST(IOTest, std_endl_test) {
+  constexpr unsigned times = 100000;
+  std::ofstream ofile("output.txt");
+  clock_t start_time, end_time;
+  clock_t endl_time_eclipse, str_n_time_eclipse, char_n_time_eclipse, one_str_time_eclipse;
+
+  // using std::endl is equivalent to [ << "\n"; std::flush();]
+  start_time = std::clock();
+  for (unsigned i = 0; i < times; ++i)
+    ofile << "Hello world" << std::endl;
+  end_time = std::clock();
+  endl_time_eclipse = end_time - start_time;
+
+  // To equivalent to following codes.
+  start_time = std::clock();
+  for (unsigned i = 0; i < times; ++i)
+    ofile << "Hello world" << "\n";
+  ofile.flush();
+  end_time = std::clock();
+  str_n_time_eclipse = end_time - start_time;
+
+  // This is more efficient.
+  start_time = std::clock();
+  for (unsigned i = 0; i < times; ++i)
+    ofile << "Hello world" << '\n';
+  ofile.flush();
+  end_time = std::clock();
+  char_n_time_eclipse = end_time - start_time;
+
+  start_time = std::clock();
+  for (unsigned i = 0; i < times; ++i)
+    ofile << "Hello world\n";
+  ofile.flush();
+  end_time = std::clock();
+  one_str_time_eclipse = end_time - start_time;
+
+#ifndef NDEBUG
+  std::cout << "endl_time_eclipse = " << endl_time_eclipse << std::endl;
+  std::cout << "str_n_time_eclipse = " << str_n_time_eclipse << std::endl;
+  std::cout << "char_n_time_eclipse = " << char_n_time_eclipse << std::endl;
+  std::cout << "one_str_time_eclipse = " << one_str_time_eclipse << std::endl;
+#endif
+
+  EXPECT_TRUE(endl_time_eclipse > str_n_time_eclipse);
+  EXPECT_TRUE(endl_time_eclipse > char_n_time_eclipse);
+  EXPECT_TRUE(str_n_time_eclipse >= char_n_time_eclipse);
 }
