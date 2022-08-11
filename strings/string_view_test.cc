@@ -31,3 +31,54 @@ TEST(string_view_test, basics) {
 
   EXPECT_TRUE(act_output == oss.str());
 }
+
+class Timer {
+private:
+  std::string Title;
+  std::chrono::high_resolution_clock::time_point Start, Stop;
+
+public:
+  Timer(const std::string &Title_) : Title(Title_) {
+    Start = std::chrono::high_resolution_clock::now();
+  }
+
+  ~Timer() { stop(); }
+
+  void stop() {
+    Stop = std::chrono::high_resolution_clock::now();
+    std::chrono::milliseconds ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(Stop - Start);
+#ifndef NDEBUG
+    std::cout << Title << " " << (ms.count()) * 0.001 << "s\n";
+#endif
+  }
+};
+
+void FunctionWithString(const std::string &Str) { }
+void FunctionWithString(const std::string_view &Sv) { }
+
+TEST(string_view_test, time_test) {
+  {
+    Timer T("std::string");
+    for (unsigned i = 0; i < 1000000; ++i) {
+      std::string Name = "Yuanjun Ren";
+      std::string FirstName = Name.substr(0, 6);
+      std::string Lastname = Name.substr(7, 3);
+
+      FunctionWithString(FirstName);
+      FunctionWithString(Lastname);
+    }
+  }
+
+  {
+    Timer T("std::string_view");
+    for (unsigned i = 0; i < 1000000; ++i) {
+      std::string Name = "Yuanjun Ren";
+      std::string_view FirstName = std::string_view(Name.data(), 6);
+      std::string_view Lastname = std::string_view(Name.data() + 7, 3);
+
+      FunctionWithString(FirstName);
+      FunctionWithString(Lastname);
+    }
+  }
+}
