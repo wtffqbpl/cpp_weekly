@@ -37,6 +37,8 @@ add_executable(cpp_weekly
         template/function_template_test.cc
         )
 
+include_directories(include)
+
 target_link_libraries(
         cpp_weekly
         GTest::gtest_main

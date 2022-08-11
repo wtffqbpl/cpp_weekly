@@ -1,4 +1,6 @@
+#include "my_timer.h"
 #include <gtest/gtest.h>
+#include <chrono>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -31,28 +33,6 @@ TEST(string_view_test, basics) {
 
   EXPECT_TRUE(act_output == oss.str());
 }
-
-class Timer {
-private:
-  std::string Title;
-  std::chrono::high_resolution_clock::time_point Start, Stop;
-
-public:
-  Timer(const std::string &Title_) : Title(Title_) {
-    Start = std::chrono::high_resolution_clock::now();
-  }
-
-  ~Timer() { stop(); }
-
-  void stop() {
-    Stop = std::chrono::high_resolution_clock::now();
-    std::chrono::milliseconds ms =
-            std::chrono::duration_cast<std::chrono::milliseconds>(Stop - Start);
-#ifndef NDEBUG
-    std::cout << Title << " " << (ms.count()) * 0.001 << "s\n";
-#endif
-  }
-};
 
 void FunctionWithString(const std::string &Str) { }
 void FunctionWithString(const std::string_view &Sv) { }
