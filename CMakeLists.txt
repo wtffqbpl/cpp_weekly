@@ -4,7 +4,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(cpp_weekly)
 
 # GoogleTest requires at least C++14
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -32,6 +32,7 @@ add_executable(cpp_weekly
         pointer_like_classes/shared_ptr_test.cc
         stl/valarray_test.cc
         strings/string_test.cc
+        strings/string_view_test.cc
         template/class_template_test.cc
         template/function_template_test.cc
         )
