@@ -17,6 +17,9 @@ public:
 
   ~Timer() { stop(); }
 
+  /*
+   * @brief time eclipse from construct this timer class with milliseconds.
+   */
   uint64_t timeEclipses() {
     Stop = std::chrono::high_resolution_clock::now();
     return std::chrono::duration_cast<std::chrono::milliseconds>(Stop - Start).count();
