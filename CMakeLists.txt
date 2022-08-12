@@ -38,6 +38,7 @@ add_executable(cpp_weekly
         template/chap_1_function_templates.cc
         template/class_template_test.cc
         template/function_template_test.cc
+        template/ref_cref_test.cc
         )
 
 include_directories(include)
