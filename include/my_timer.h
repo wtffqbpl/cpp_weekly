@@ -20,18 +20,18 @@ public:
   /*
    * @brief time eclipse from construct this timer class with milliseconds.
    */
-  uint64_t eclipses() {
+  uint64_t eclipse() {
     auto Stop = std::chrono::high_resolution_clock::now();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(Stop - Start).count();
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(Stop - Start).count();
   }
 
 private:
   void stop() {
     auto Stop = std::chrono::high_resolution_clock::now();
-    std::chrono::milliseconds ms =
-            std::chrono::duration_cast<std::chrono::milliseconds>(Stop - Start);
+    std::chrono::nanoseconds ms =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(Stop - Start);
 #ifndef NDEBUG
-    std::cout << Title << " " << (ms.count()) * 0.001 << "s\n";
+    std::cout << Title << " " << static_cast<double>((ms.count()) * 0.001) << "s\n";
 #endif
   }
 };

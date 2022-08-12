@@ -28,6 +28,7 @@ add_executable(cpp_weekly
         formatting/formatting_test.cc
         functor/function_test.cc
         functional/invoke_test.cc
+        future/future_test.cc
         io/io_test.cc
         pointer_like_classes/iterator_case_test.cc
         pointer_like_classes/shared_ptr_test.cc
