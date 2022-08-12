@@ -1,6 +1,5 @@
 #include "my_timer.h"
 #include <gtest/gtest.h>
-#include <chrono>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -11,8 +10,8 @@ TEST(string_view_test, basics) {
   testing::internal::CaptureStdout();
 
   const char *cstr = "string_view test";
-  std::string_view sv1(cstr);
-  std::string_view sv2(cstr, 4);
+  std::string_view sv1{cstr};
+  std::string_view sv2{cstr, 4};
   std::cout << "sv1: " << sv1 << ", sv2: " << sv2 << std::endl;
   oss << "sv1: string_view test, sv2: stri" << std::endl;
 
