@@ -3,7 +3,7 @@
 #include <future>
 #include <random>
 
-std::set<int> make_sorted_random(const size_t num_elems) {
+static std::set<int> make_sorted_random(const size_t num_elems) {
   std::set<int> retval;
   std::random_device rd;
   std::mt19937 gen(rd());
@@ -29,7 +29,7 @@ TEST(std_future_test, basic_test) {
   }
 }
 
-int add(int a, int b) {
+static int add(int a, int b) {
   std::cout << "work thread = " << std::this_thread::get_id() << std::endl;
   std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   return a + b;
@@ -62,7 +62,7 @@ TEST(std_future_test, async_task_test) {
   std::cout << result.get() << std::endl;
 }
 
-int do_something(char c) {
+static int do_something(char c) {
   // random-number generator (use c as seed to get different sequences)
   std::default_random_engine dre(c);
   std::uniform_int_distribution<int> id(10, 1000);
@@ -76,8 +76,8 @@ int do_something(char c) {
   return c;
 }
 
-int func1() { return do_something('.'); }
-int func2() { return do_something('+'); }
+static int func1() { return do_something('.'); }
+static int func2() { return do_something('+'); }
 
 TEST(std_future_test, async_task_test2) {
   std::cout << "starting func1() in background"

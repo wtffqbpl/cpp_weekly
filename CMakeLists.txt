@@ -35,6 +35,7 @@ add_executable(cpp_weekly
         stl/valarray_test.cc
         strings/string_test.cc
         strings/string_view_test.cc
+        template/chap_1_function_templates.cc
         template/class_template_test.cc
         template/function_template_test.cc
         )
