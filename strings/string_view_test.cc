@@ -47,7 +47,7 @@ TEST(string_view_test, time_test) {
 
       FunctionWithString(FirstName);
       FunctionWithString(Lastname);
-      string_time = T.timeEclipses();
+      string_time = T.eclipses();
     }
   }
 
@@ -60,7 +60,7 @@ TEST(string_view_test, time_test) {
 
       FunctionWithString(FirstName);
       FunctionWithString(Lastname);
-      string_view_time = T.timeEclipses();
+      string_view_time = T.eclipses();
     }
   }
 
