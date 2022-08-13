@@ -30,12 +30,14 @@ add_executable(cpp_weekly
         functional/invoke_test.cc
         future/future_test.cc
         io/io_test.cc
+        misc/optional_test.cc
         pointer_like_classes/iterator_case_test.cc
         pointer_like_classes/shared_ptr_test.cc
         stl/valarray_test.cc
         strings/string_test.cc
         strings/string_view_test.cc
         template/chap_1_function_templates.cc
+        template/chap4_variadic_templates.cc
         template/class_template_test.cc
         template/function_template_test.cc
         template/ref_cref_test.cc
