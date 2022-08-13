@@ -1,12 +1,10 @@
 #include <gtest/gtest.h>
 
-template<typename T>
-void print(T arg) { std::cout << arg << '\n'; }
+template <typename T> void print(T arg) { std::cout << arg << '\n'; }
 
-template<typename T, typename... Types>
-void print(T firstArg, Types... args) {
-  print(firstArg);      // call print() for the first argument.
-  print(args...);       // call print() for remaining arguments.
+template <typename T, typename... Types> void print(T firstArg, Types... args) {
+  print(firstArg); // call print() for the first argument.
+  print(args...);  // call print() for remaining arguments.
 }
 
 TEST(chap4_variadic_templates, print_test) {
@@ -21,8 +19,9 @@ TEST(chap4_variadic_templates, print_test) {
   std::string act_output = testing::internal::GetCapturedStdout();
 
 #ifndef NDEBUG
-  std::cout << "Expected output:\n" << oss.str()
-            << "Actual output:\n" << act_output << std::endl;
+  std::cout << "Expected output:\n"
+            << oss.str() << "Actual output:\n"
+            << act_output << std::endl;
 #endif
 
   EXPECT_TRUE(oss.str() == act_output);
