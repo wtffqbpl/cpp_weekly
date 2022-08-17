@@ -55,3 +55,33 @@ TEST(std_optional_test, basic_test1) {
 
   EXPECT_TRUE(act_output == oss.str());
 }
+
+/*
+ * @brief value_or(u) 给定的 default 值, 只能是 optional<T> 中T类型的值
+ *        如果传入的值不是T 类型的，则会自动转成 T 类型的值。
+ */
+TEST(std_optional_test, value_or_test) {
+  std::optional<int> offset{10};
+  std::optional<int> total;
+
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  std::cout << offset.value_or(0) << std::endl;
+  std::cout << total.value_or(1000.5566) << std::endl;
+  std::cout << total.value_or('a') << std::endl;
+  oss << "10\n"
+      << "1000\n"
+      << "97\n";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
