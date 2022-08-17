@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <optional>
+#include <vector>
 
 // optional can be used as the return type of a factory taht may fail.
 std::optional<std::string> create(bool b) {
@@ -80,6 +81,61 @@ TEST(std_optional_test, value_or_test) {
   std::cout << "Expected output:\n"
             << oss.str() << '\n'
             << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
+
+////////////////////////// std::in_place test ///////////////////////////////
+
+struct FindResult {
+  FindResult(char c, int i) : upper(c), pos(i) {}
+  char upper;
+  int pos;
+};
+
+std::vector<std::optional<FindResult>>
+findFirstUpper(const std::vector<std::string> &V) {
+  std::vector<std::optional<FindResult>> Ret;
+
+  for (auto &&T : V) {
+    int i;
+    for (i = 0; i < T.length(); ++i)
+      if (char c = T[i]; isupper(c)) {
+        // construct optional<FindResult> in vector
+        Ret.emplace_back(std::in_place, c, i);
+        // 利用 std::in_place 这个参数标示在 optional 的 constructor原地打包，
+        // 就可以完成类似与 std::vector 的 emplace_back() 的效果。
+        break;
+      }
+
+    if (i == T.length())
+      Ret.emplace_back();
+  }
+
+  return Ret;
+}
+
+TEST(std_optional_test, in_place_test) {
+  std::vector<std::string> Strs{"Nothing", "found"};
+  std::vector<std::optional<FindResult>> Res = ::findFirstUpper(Strs);
+
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  if (Res[0]) // we can use Res.has_value() for result checking.
+    std::cout << Res[0]->upper << " at " << Res[0]->pos << '\n';
+  else
+    std::cout << "Nothing found" << '\n';
+  oss << "N at 0\n";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output: \n"
+            << oss.str() << '\n'
+            << "Actual output: \n"
             << act_output << '\n';
 #endif
 
