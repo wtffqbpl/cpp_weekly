@@ -31,6 +31,7 @@ add_executable(cpp_weekly
         future/future_test.cc
         io/io_test.cc
         misc/optional_test.cc
+        misc/typeinfo_test.cc
         pointer_like_classes/iterator_case_test.cc
         pointer_like_classes/shared_ptr_test.cc
         stl/valarray_test.cc
