@@ -24,19 +24,31 @@ file(GLOB_RECURSE cpp_weekly_srcs *.cc)
 # add_executable(cpp_weekly ${cpp_weekly_srcs})
 add_executable(cpp_weekly
         conversion_function/conversion_function.cc
+
         class/class_test.cc
+
         formatting/formatting_test.cc
+
         functor/function_test.cc
+
         functional/invoke_test.cc
+
         future/future_test.cc
+
         io/io_test.cc
+
+        misc/constexpr_test.cc
         misc/optional_test.cc
         misc/typeinfo_test.cc
+
         pointer_like_classes/iterator_case_test.cc
         pointer_like_classes/shared_ptr_test.cc
+
         stl/valarray_test.cc
+
         strings/string_test.cc
         strings/string_view_test.cc
+
         template/chap_1_function_templates.cc
         template/chap_2_class_templates.cc
         template/chap4_variadic_templates.cc
