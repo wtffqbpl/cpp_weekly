@@ -12,6 +12,10 @@ private:
   bool Other_;
 };
 
+/*
+ * @brief constexpr 修饰的constructor，
+ */
+
 TEST(constexpr_test, constexpr_ctor) {
   constexpr Debug IOSub{false, true, false};
   constexpr Debug Prod(false);
