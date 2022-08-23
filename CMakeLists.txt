@@ -40,6 +40,7 @@ add_executable(cpp_weekly
         misc/constexpr_test.cc
         misc/optional_test.cc
         misc/typeinfo_test.cc
+        misc/std_copy_test.cc
 
         pointer_like_classes/iterator_case_test.cc
         pointer_like_classes/shared_ptr_test.cc
