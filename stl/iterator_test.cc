@@ -4,7 +4,8 @@
 namespace advance_v1 {
 template <typename Iterator>
 constexpr // required since c++17
-void do_advance(Iterator &It,
+    void
+    do_advance(Iterator &It,
                typename std::iterator_traits<Iterator>::difference_type N,
                std::input_iterator_tag) {
   for (; N > 0; --N) ++It;
@@ -12,7 +13,8 @@ void do_advance(Iterator &It,
 
 template <typename Iterator>
 constexpr // required since c++17
-void do_advance(Iterator &It,
+    void
+    do_advance(Iterator &It,
                typename std::iterator_traits<Iterator>::difference_type N,
                std::bidirectional_iterator_tag) {
   if (N >= 0)

@@ -47,6 +47,7 @@ add_executable(cpp_weekly
 
         stl/valarray_test.cc
         stl/iterator_test.cc
+        stl/vector_test.cc
 
         strings/string_test.cc
         strings/string_view_test.cc
