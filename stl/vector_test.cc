@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <deque>
 #include <gtest/gtest.h>
 #include <list>
@@ -131,6 +132,44 @@ TEST(stl_range, range_test) {
   std::cout << "Expected output:\n"
             << oss.str() << "actual output:\n"
             << act_output << std::endl;
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
+
+// unique 函数在数值处理软件中非常有用，可以删除序列中重复的条目。当然前提是序列必须有序.
+// 此时unique会调整序列的条目的位置，把唯一值放在序列的前面，把其他重复的值移到序列的尾部,
+// unique 函数的返回值是一个iterator, 指向第一条重复的值, 可以用这个返回值来删除重复
+// 的条目。
+// std::vector<int> seq = {3, 4, 7, 9, 2, 5, 7, 8, 3, 4, 3, 9};
+// std::sort(seq.begin(), seq.end());
+// auto it = std::unique(seq.begin(), seq.end());
+// seq.resize(std::distance(seq.begin(), it));
+
+// 如果经常使用上述代码，可以把它们封装成一个泛型函数，并用序列作为参数
+template <typename Seq>
+void make_unique_sequence(Seq &seq) {
+  std::sort(std::begin(seq), std::end(seq));
+  auto it = std::unique(std::begin(seq), std::end(seq));
+  seq.resize(std::distance(std::begin(seq), it));
+}
+
+TEST(vector, unique_test) {
+  std::vector<int> seq = {3, 4, 7, 9, 2, 5, 7, 8, 3, 4, 3, 9};
+  make_unique_sequence(seq);
+
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  std::copy(seq.begin(), seq.end(),
+            std::ostream_iterator<int>(std::cout, ", "));
+  oss << "2, 3, 4, 5, 7, 8, 9, ";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n" << oss.str() << '\n'
+            << "Actual output:\n" << act_output << std::endl;
 #endif
 
   EXPECT_TRUE(oss.str() == act_output);
