@@ -46,6 +46,7 @@ add_executable(cpp_weekly
         pointer_like_classes/shared_ptr_test.cc
 
         stl/valarray_test.cc
+        stl/iterator_test.cc
 
         strings/string_test.cc
         strings/string_view_test.cc
