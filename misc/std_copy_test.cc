@@ -2,6 +2,32 @@
 #include <iomanip>
 #include <numeric>
 
+TEST(std_copy_test, basic_test0) {
+  std::vector<int> seq = {3, 4, 7, 9, 2, 5, 7, 8};
+  std::vector<int> v;
+
+  v.resize(seq.size());
+  std::copy(seq.begin(), seq.end(), v.begin());
+
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  for (auto val : v)
+    std::cout << val << ' ';
+  std::cout << '\n';
+  oss << "3 4 7 9 2 5 7 8 \n";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "expected output:\n"
+            << oss.str() << "actual output:\n"
+            << act_output << std::endl;
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
+
 TEST(std_copy_test, basic_test) {
   int buf[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
