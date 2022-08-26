@@ -1,3 +1,4 @@
+#include <deque>
 #include <gtest/gtest.h>
 
 TEST(vector, test1) {
@@ -40,4 +41,49 @@ TEST(vector, test1) {
 #endif
 
   EXPECT_EQ(oss.str(), act_output);
+}
+
+// 通过emplace 方法，我们可以创建不可复制、不可移动对象的容器.
+
+struct mat {};
+struct parameters {};
+struct solver {
+  solver(const mat &ref, const parameters &para) : ref(ref), para(para) {}
+  solver(const solver &) = delete;
+  solver(solver &&) = delete;
+  void print() const { std::cout << "pass\n"; }
+
+  const mat &ref;
+  const parameters &para;
+};
+void solve_x(const solver &s) { s.print(); }
+
+TEST(vector, emplace_test) {
+  parameters p1, p2, p3;
+  mat A, B, C;
+  std::deque<solver> solvers;
+
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  // solvers.push_back(solver{A, p1}) 无法通过编译
+  solvers.emplace_back(B, p1);
+  solvers.emplace_back(C, p2);
+  solvers.emplace_front(A, p3);
+
+  for (auto &s : solvers)
+    solve_x(s);
+  oss << "pass\n"
+      << "pass\n"
+      << "pass\n";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "expected output:\n"
+            << oss.str() << "actual output:\n"
+            << act_output << std::endl;
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
 }
