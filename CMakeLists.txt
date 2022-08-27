@@ -37,6 +37,8 @@ add_executable(cpp_weekly
 
         io/io_test.cc
 
+        meta_programming/limits_test.cc
+
         misc/constexpr_test.cc
         misc/initializer_list_test.cc
         misc/optional_test.cc

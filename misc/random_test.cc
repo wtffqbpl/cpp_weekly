@@ -6,7 +6,6 @@ std::default_random_engine &global_uring() {
   return U;
 }
 
-
 /*
  * @brief 通过重设发生器的seed来使得接下来的数字真正的随机化
  */
