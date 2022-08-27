@@ -38,6 +38,7 @@ add_executable(cpp_weekly
         io/io_test.cc
 
         misc/constexpr_test.cc
+        misc/initializer_list_test.cc
         misc/optional_test.cc
         misc/typeinfo_test.cc
         misc/std_copy_test.cc
