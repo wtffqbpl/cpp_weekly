@@ -31,7 +31,7 @@ add_executable(cpp_weekly
 
         functor/function_test.cc
 
-        functional/invoke_test.cc
+        functional/functional_test.cc
 
         future/future_test.cc
 
@@ -51,6 +51,7 @@ add_executable(cpp_weekly
 
         stl/valarray_test.cc
         stl/iterator_test.cc
+        stl/tuple_test.cc
         stl/vector_test.cc
 
         regrex/match_search_test.cc

@@ -100,3 +100,46 @@ TEST(limit, calc_square_root) {
   EXPECT_TRUE(std::abs(d - std::sqrt(b)) <
               std::numeric_limits<double>::epsilon());
 }
+
+struct simple_point {
+#ifdef __cplusplus
+  simple_point(double x, double y) : x(x), y(y) {}
+  simple_point() = default;
+  simple_point(std::initializer_list<double> il) {
+    auto it = std::begin(il);
+    x = *it;
+    y = *std::next(it);
+  }
+#endif
+
+  double x, y;
+};
+
+TEST(pod, basic_test) {
+  std::stringstream oss;
+
+  testing::internal::CaptureStdout();
+  std::cout << "simple_point is pod = " << std::boolalpha
+            << std::is_pod<simple_point>::value << std::endl;
+
+  oss << "simple_point is pod = true\n";
+
+  simple_point p1{3.0, 7.1}, p2{};
+
+
+  static_assert(std::is_trivially_copyable<simple_point>::value,
+                "simple_point is not as simple as you think "
+                "and cannot be memcpyd!");
+  memcpy(&p2, &p1, sizeof p1);
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
