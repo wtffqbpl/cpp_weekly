@@ -126,7 +126,6 @@ TEST(pod, basic_test) {
 
   simple_point p1{3.0, 7.1}, p2{};
 
-
   static_assert(std::is_trivially_copyable<simple_point>::value,
                 "simple_point is not as simple as you think "
                 "and cannot be memcpyd!");

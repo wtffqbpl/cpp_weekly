@@ -128,3 +128,41 @@ private:
 };
 
 // default class template arguments.
+
+// 2.9 Class template Argument Deduction.
+template <typename T> class Stack_2_9 {
+public:
+  Stack_2_9() = default;
+  Stack_2_9(T const &elem) // initialize stack with one element
+      : elems({elem}) {}
+
+  void printElems() const {
+    for (const auto &val : elems)
+      std::cout << val << ' ';
+    std::cout << '\n';
+  }
+
+private:
+  std::vector<T> elems; // elemnts.
+};
+
+// This allows you to declare a stack as follows.
+TEST(chap2_class_template, argument_deduction) {
+  Stack_2_9 IntStack = 0; // Stack_2_9<int> deduced since c++17
+
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  IntStack.printElems();
+  oss << "0 \n";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+#ifndef NDEBUG
+  std::cout << "Expected output\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
