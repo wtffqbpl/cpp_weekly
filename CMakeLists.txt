@@ -40,7 +40,9 @@ add_executable(cpp_weekly
         meta_programming/limits_test.cc
 
         misc/constexpr_test.cc
+        misc/cpp_weekly_youtube_test.cc
         misc/initializer_list_test.cc
+        misc/new_delete_test.cc
         misc/optional_test.cc
         misc/random_test.cc
         misc/std_copy_test.cc
