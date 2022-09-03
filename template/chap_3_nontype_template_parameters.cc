@@ -62,3 +62,62 @@ TEST(chap_3_nonteyp_template_parameters, nontype_class_params) {
 
   EXPECT_TRUE(oss.str() == act_output);
 }
+
+/// 3.2 Nontype Function Template Parameters
+template <int Val, typename T> constexpr T addValue(T x) { return x + Val; }
+
+/// To derive the return type from the passed nontype.
+template <auto Val, typename T = decltype(Val)> T addValue_2(T x) {
+  return x + Val;
+}
+
+/// To ensure that the passed value has the same type as the passed type.
+template <typename T, T Val = T{}> T addValue_3(T x) { return x + Val; }
+
+TEST(chap_3_nonteyp_template_parameters, nontype_function_test) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  std::vector<int> arr1{1, 2, 3, 4, 5, 6};
+  std::vector<int> res;
+
+  // case 1;
+  std::transform(arr1.begin(), arr1.end(), std::back_inserter(res),
+                 addValue<5, int>);
+  for (const auto &val : res)
+    std::cout << val << ' ';
+  std::cout << '\n';
+  std::copy(res.begin(), res.end(), std::ostream_iterator<int>(oss, " "));
+  oss << '\n';
+
+  // case 2
+  res.clear();
+  std::transform(arr1.begin(), arr1.end(), std::back_inserter(res),
+                 addValue_2<5>);
+  for (const auto &val : res)
+    std::cout << val << ' ';
+  std::cout << '\n';
+  std::copy(res.begin(), res.end(), std::ostream_iterator<int>(oss, " "));
+  oss << '\n';
+
+  // case 3
+  res.clear();
+  std::transform(arr1.begin(), arr1.end(), std::back_inserter(res),
+                 addValue_3<int, 5>);
+  for (const auto &val : res)
+    std::cout << val << ' ';
+  std::cout << '\n';
+  std::copy(res.begin(), res.end(), std::ostream_iterator<int>(oss, " "));
+  oss << '\n';
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
