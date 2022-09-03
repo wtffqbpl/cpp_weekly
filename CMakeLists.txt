@@ -66,7 +66,7 @@ add_executable(cpp_weekly
         template/chap_1_function_templates.cc
         template/chap_2_class_templates.cc
         template/chap_3_nontype_template_parameters.cc
-        template/chap4_variadic_templates.cc
+        template/chap_4_variadic_templates.cc
         template/class_template_test.cc
         template/function_template_test.cc
         template/partial_specialization_test.cc
