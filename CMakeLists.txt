@@ -23,6 +23,8 @@ enable_testing()
 file(GLOB_RECURSE cpp_weekly_srcs *.cc)
 # add_executable(cpp_weekly ${cpp_weekly_srcs})
 add_executable(cpp_weekly
+        algorithms/transform_test.cc
+
         conversion_function/conversion_function.cc
 
         class/class_test.cc
