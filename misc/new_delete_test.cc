@@ -1,5 +1,12 @@
 #include <gtest/gtest.h>
 
+/*
+ * @brief Placement new 存在的理由
+ *    1. 用placement new解决buffer的问题
+ *      用 new
+ * 分配的数组buffer，由于调用了默认构造函数，因此执行效率上不佳。若没有默认
+ *      构造函数,则会发生编译错误。
+ */
 TEST(new_delete, placement_new_test) {
   // buffer on stack
   unsigned char Buf[sizeof(int) * 2];

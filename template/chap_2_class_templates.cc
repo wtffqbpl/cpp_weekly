@@ -133,27 +133,35 @@ private:
 template <typename T> class Stack_2_9 {
 public:
   Stack_2_9() = default;
-  Stack_2_9(T const &elem) // initialize stack with one element
+  explicit Stack_2_9(T const &elem) // initialize stack with one element
       : elems({elem}) {}
 
-  void printElems() const {
-    for (const auto &val : elems)
-      std::cout << val << ' ';
-    std::cout << '\n';
+  friend std::ostream &operator<<(std::ostream &os, const Stack_2_9<T> &Data) {
+    for (const auto &val : Data.elems)
+      os << val << ' ';
+    os << '\n';
+    return os;
   }
 
 private:
   std::vector<T> elems; // elemnts.
 };
 
+/// You can define specific deduction guides to provide additional or fix
+/// existing class template argument deductions.
+/// The \p guided type of the deduction guide.
+Stack_2_9(char const *)->Stack_2_9<std::string>;
+
 // This allows you to declare a stack as follows.
 TEST(chap2_class_template, argument_deduction) {
-  Stack_2_9 IntStack = 0; // Stack_2_9<int> deduced since c++17
+  Stack_2_9 IntStack{0}; // Stack_2_9<int> deduced since c++17
+  Stack_2_9 stringStack{"bottom"};
 
   std::stringstream oss;
   testing::internal::CaptureStdout();
 
-  IntStack.printElems();
+  std::cout << IntStack;
+
   oss << "0 \n";
 
   std::string act_output = testing::internal::GetCapturedStdout();
@@ -165,4 +173,54 @@ TEST(chap2_class_template, argument_deduction) {
 #endif
 
   EXPECT_TRUE(oss.str() == act_output);
+}
+
+/// 2.10 Templatized Aggregates
+/// Aggregate classes \p classes/structs with no user-provided, explicit, or
+/// inherited constructors, no private or protected nonstatic data members,
+/// no virtual functions, and no virtual, private, or protected base classes.
+
+// Aggregate classes can also be templates.
+
+template <typename T> struct ValueWithComment {
+  T value;
+  std::string comment;
+
+  friend std::ostream &operator<<(std::ostream &os, ValueWithComment<T> &Val) {
+    os << Val.value << ' ' << Val.comment;
+    return os;
+  }
+};
+
+// Since c++17, you can even define deduction guides for aggregate class
+// templates.
+ValueWithComment(char const *, char const *)->ValueWithComment<std::string>;
+ValueWithComment(float)->ValueWithComment<int>;
+
+TEST(chap2_class_template, aggregate_template) {
+  ValueWithComment<int> vc;
+  vc.value = 42;
+  vc.comment = "Initial value";
+  std::stringstream oss;
+
+  ValueWithComment vc2{"Hello", "initialize value"};
+
+  testing::internal::CaptureStdout();
+
+  std::cout << vc2 << '\n';
+  std::cout << vc << '\n';
+
+  oss << "Hello initialize value\n";
+  oss << "42 Initial value\n";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(act_output == oss.str());
 }
