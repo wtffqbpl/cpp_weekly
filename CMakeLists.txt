@@ -41,6 +41,7 @@ add_executable(cpp_weekly
 
         meta_programming/limits_test.cc
 
+        misc/class_related_hash_function.cc
         misc/constexpr_test.cc
         misc/cpp_weekly_youtube_test.cc
         misc/initializer_list_test.cc
