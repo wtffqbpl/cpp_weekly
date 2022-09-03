@@ -1,4 +1,7 @@
+#include <complex>
 #include <gtest/gtest.h>
+#include <unordered_set>
+#include <utility>
 
 template <typename T> void print(T arg) { std::cout << arg << '\n'; }
 
@@ -270,4 +273,182 @@ TEST(chap4_variadic_templates, fold_expression_more_cases) {
 #endif
 
   EXPECT_TRUE(oss.str() == act_output);
+}
+
+// Variadic templates play an important role when implementing generic
+// libraries, such as the C++ standard library.
+// One typical application is the forwarding of a variadic number of arguments
+// of arbitrary type. For exmaple, we use this feature when:
+//  * Passing arguments to the constructor of a new heap object owned by a
+//    shared pointer:
+//      // create shared pointer to complex<float> initialized by 4.2 and 7.7.
+//      auto sp = std::make_shared<std::complex<float>>(4.2, 7.7);
+//  * Passing arguments to a thread, which is started by the library.
+//    std::thread t(foo, 42, "hello");
+//  * Passing arguments to the constructor of a new element pushed into
+//    a vector.
+//    std::vector<Customer> v;
+//    ...
+//    // insert a Customer initialized by three arguments.
+//    v.emplace_back("Tim", "Jove", 1962);
+//
+// Usually, the arguments are "perfectly forwarded" with move semantics.
+// So that the corresponding declarations are, for example:
+
+///
+/// \code
+/// namespace std {
+/// template <typename T, typename... Args>
+/// shared_ptr<T> make_shared(Args&&... args);
+///
+/// class thread {
+/// public:
+///   template <typename F, typename... Args>
+///   explicit thread(F&& f, Args&&... args);
+///   ...
+/// };
+///
+/// template <typename T, typename Allocator = std::allocator<T>>
+/// class vector {
+/// public:
+///   template <typename... Args> reference emplace_back(Args&&... args);
+///   ...
+/// };
+/// }
+/// \endcode
+///
+
+template <typename C, typename... Idx>
+void printElems(C const &coll, Idx... idx) {
+  print(coll[idx]...);
+}
+
+template <std::size_t... Idx, typename C> void printIdx(C const &coll) {
+  print(coll[Idx]...);
+}
+
+// type for arbitrary number of indices.
+template <std::size_t...> struct Indices {};
+
+// Define a function that calls print() for the elements of a std::array or
+// std::tuple using the compile-time access with get<>() for the given indices.
+template <typename T, std::size_t... Idx>
+void printByIdx(T t, Indices<Idx...>) {
+  print(std::get<Idx>(t)...);
+}
+
+TEST(chap4_variadic_templates, variadic_indices_test) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  std::vector<std::string> coll = {"good", "times", "say", "bye"};
+  printElems(coll, 2, 0, 3);
+  // This is equivalent to print(coll[2], coll[0], coll[3]);
+  oss << "say\ngood\nbye\n";
+
+  printIdx<2, 0, 3>(coll);
+  oss << "say\ngood\nbye\n";
+
+  std::array<std::string, 5> arr = {"Hello", "my", "new", "!", "World"};
+  printByIdx(arr, Indices<0, 4, 3>());
+  oss << "Hello\nWorld\n!\n";
+
+  auto t = std::make_tuple(12, "monkeys", 2.0);
+  printByIdx(t, Indices<0, 1, 2>());
+  oss << "12\nmonkeys\n2\n";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
+
+template <typename... T> void printDoubled(T const &...args) {
+  print(args + args...);
+}
+
+template <typename... T> void addOne(T const &...args) {
+  print(args + 1 ...); // OK
+  // print((args + 1)...); // OK
+}
+
+template <typename T1, typename... TN> constexpr bool isHomogeneous(T1, TN...) {
+  return (std::is_same<T1, TN>::value && ...); // since C++17
+}
+
+TEST(chap4_variadic_templates, variadic_more_testcases) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  // This is equivalent to
+  /// \code
+  /// printDoubled(7.5 + 7.5,
+  ///              std::string("Hello") + std::string("Hello"),
+  ///              std::complex<float>(4, 2) + std::complex<float>(4, 2));
+  /// \endcode
+  printDoubled(7.5, std::string("Hello"), std::complex<float>(4, 2));
+  oss << "15\nHelloHello\n(8,4)\n";
+
+  /// \code
+  /// print(3 + 1, 4.5 + 1, 8.f + 1);
+  /// \endcode
+  addOne(3, 4.5, 8.f);
+  oss << "4\n5.5\n9\n";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+
+  /// \code
+  /// std::is_same<int, int>::value && std:is_same<int, char const*>::value
+  /// \endcode
+  EXPECT_FALSE(isHomogeneous(43, -1, "hello"));
+  EXPECT_TRUE(isHomogeneous("Hello", " ", "world", "!"));
+}
+
+class Customer {
+private:
+  std::string Name_;
+
+public:
+  explicit Customer(std::string name) : Name_(std::move(name)) {}
+  [[nodiscard]] std::string getName() const { return Name_; }
+};
+
+struct CustomerEq {
+  bool operator()(Customer const &C1, Customer const &C2) const {
+    return C1.getName() == C2.getName();
+  }
+};
+
+struct CustomerHash {
+  std::size_t operator()(Customer const &C) const {
+    return std::hash<std::string>()(C.getName());
+  }
+};
+
+// define class that combines operator() for variadic base classes:
+template <typename... Bases> struct Overloader : Bases... {
+  using Bases::operator()...; // OK since C++17
+};
+
+TEST(chap4_variadic_templates, variadic_base_classes_and_using_test) {
+  // combine hasher and equality for customers in one type.
+  using CustomerOP = Overloader<CustomerHash, CustomerEq>;
+
+  std::unordered_set<Customer, CustomerHash, CustomerEq> coll1;
+  std::unordered_set<Customer, CustomerOP, CustomerOP> coll2;
 }
