@@ -171,3 +171,49 @@ class nth_derivative<F, T, 1> : public derivative<F, T> {
 
 // 计算任意阶导数示例:
 // nth_derivative<psc_f, double, 22> d22_psc_o(psc_f(1.0), 0.00001);
+
+class Person {
+public:
+  explicit Person(std::string lastname, std::string firstname)
+      : firstname_(std::move(firstname)), lastname_(std::move(lastname)) {}
+  [[nodiscard]] std::string firstname() const { return firstname_; };
+  [[nodiscard]] std::string lastname() const { return lastname_; };
+
+private:
+  std::string firstname_;
+  std::string lastname_;
+};
+
+// class for function predicate
+class PersonSortTraits {
+public:
+  bool operator()(const Person &p1, const Person &p2) const {
+    return p1.lastname() < p2.lastname() ||
+           (p1.lastname() == p2.lastname() && p1.firstname() < p2.firstname());
+  }
+};
+
+TEST(functor, basic_test_2) {
+  std::stringstream oss;
+  std::set<Person, PersonSortTraits> coll;
+
+  testing::internal::CaptureStdout();
+  coll.insert(Person{"Yuanjun", "Ren"});
+  coll.insert(Person{"Xinying", "Li"});
+
+  oss << "Xinying Li\nYuanjun Ren\n";
+
+  for (const auto &p : coll)
+    std::cout << p.lastname() << ' ' << p.firstname() << '\n';
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
