@@ -1,6 +1,7 @@
 #include <cmath>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <list>
 
 template <typename T>
 struct Identity {
@@ -205,6 +206,50 @@ TEST(functor, basic_test_2) {
 
   for (const auto &p : coll)
     std::cout << p.lastname() << ' ' << p.firstname() << '\n';
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
+
+class IntSequence {
+private:
+  int value_;
+
+public:
+  explicit IntSequence(int initialValue) : value_(initialValue) {}
+
+  int operator()() { return ++value_; }
+};
+
+TEST(functor, internal_state_test) {
+  std::stringstream oss;
+  std::list<int> coll;
+
+  testing::internal::CaptureStdout();
+
+  // insert values from 1 to 9.
+  std::generate_n(std::back_inserter(coll), 9, IntSequence(1));
+
+  for (const auto &val : coll)
+    std::cout << val << ' ';
+  std::cout << '\n';
+  oss << "2 3 4 5 6 7 8 9 10 \n";
+
+  // replace second to last element but one with values starting at 42.
+  std::generate(std::next(coll.begin()), std::prev(coll.end()),
+                IntSequence(42)); // generate values, starting with 42.
+  for (const auto &val : coll)
+    std::cout << val << ' ';
+  std::cout << '\n';
+  oss << "2 43 44 45 46 47 48 49 10 \n";
 
   std::string act_output = testing::internal::GetCapturedStdout();
 
