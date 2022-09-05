@@ -332,8 +332,14 @@ template <std::size_t...> struct Indices {};
 
 // Define a function that calls print() for the elements of a std::array or
 // std::tuple using the compile-time access with get<>() for the given indices.
+// This is equivalent to std::index_sequence
 template <typename T, std::size_t... Idx>
 void printByIdx(T t, Indices<Idx...>) {
+  print(std::get<Idx>(t)...);
+}
+
+template <typename T, std::size_t... Idx>
+void printByIdx(T t, std::index_sequence<Idx...>) {
   print(std::get<Idx>(t)...);
 }
 
@@ -351,6 +357,8 @@ TEST(chap4_variadic_templates, variadic_indices_test) {
 
   std::array<std::string, 5> arr = {"Hello", "my", "new", "!", "World"};
   printByIdx(arr, Indices<0, 4, 3>());
+  oss << "Hello\nWorld\n!\n";
+  printByIdx(arr, std::index_sequence<0, 4, 3>{});
   oss << "Hello\nWorld\n!\n";
 
   auto t = std::make_tuple(12, "monkeys", 2.0);

@@ -280,7 +280,7 @@ private:
   std::string value_;
 
 public:
-  explicit BoolString(std::string s) : value_(std::move(s)) {}
+  explicit BoolString(std::string &&s) : value_(std::forward<std::string>(s)) {}
 
   template <typename T = std::string> [[nodiscard]] T get() const {
     return value_;
