@@ -44,7 +44,6 @@ add_executable(cpp_weekly
 
         misc/class_related_hash_function.cc
         misc/constexpr_test.cc
-        misc/cpp_weekly_youtube_test.cc
         misc/initializer_list_test.cc
         misc/new_delete_test.cc
         misc/optional_test.cc
@@ -76,6 +75,9 @@ add_executable(cpp_weekly
         template/partial_specialization_test.cc
         template/ref_cref_test.cc
         template/using_template_test.cc
+
+        youtube/cpp_weekly_youtube_test.cc
+        youtube/e340_string_split_test.cc
         )
 
 include_directories(include)
