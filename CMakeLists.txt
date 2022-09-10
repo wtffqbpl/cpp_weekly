@@ -17,6 +17,7 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "-std=c++2a")
 enable_testing()
 
@@ -35,6 +36,8 @@ add_executable(cpp_weekly
         functor/function_test.cc
 
         functional/functional_test.cc
+
+        functional_programming/chap_1_introduction.cc
 
         future/future_test.cc
 

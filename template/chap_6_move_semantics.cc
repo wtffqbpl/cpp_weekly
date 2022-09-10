@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <type_traits>
 #include <utility>
 
 class X {};
@@ -91,6 +92,96 @@ TEST(chap_6_move_semantics, enable_if_test) {
   check(p);
   oss << "not smart pointer\n";
   delete p;
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
+
+/// SFINAE --- Substitution failure is not an error
+/// 意思是匹配失败不是错误。当调用模版函数时，编译器会根据传入参数推导最合适的模版函数，
+/// 在这个推导过程中如果某一个或者某几个模版函数推导出来是编译无法通过的，只要有一个可以
+/// 正确推导出来，那么那几个推导得到的可能产生编译错误的模版函数并不会引发编译错误。
+
+struct Test {
+  typedef int foo;
+};
+
+template <typename T> void f(typename T::foo) {} // definition #1
+template <typename T> void f(T) {}               // Definition #2
+
+template <bool B, class T = void> struct my_enable_if {};
+
+template <class T> struct my_enable_if<true, T> { typedef T type; };
+
+/// 当enable_if<bool, class T> 第一个参数为true时，才会定义type.
+typename std::enable_if<true, int>::type t;
+
+/// 下面这两个函数如果是普通函数的话，根据重载的规则是不会通过编译的，会产生二义性。
+/// 但是因为std::enable_if
+/// 的使用，导致这两个函数的返回值在同一时刻只会有一个合法，
+/// 遵循SFINAE原则，则可以顺利通过编译。
+template <typename T>
+typename std::enable_if<std::is_trivial<T>::value>::type SFINAE_test(T value) {
+  std::cout << "T is trivial type.\n";
+}
+
+template <typename T>
+typename std::enable_if<!std::is_trivial<T>::value>::type SFINAE_test(T value) {
+  std::cout << "T is non-trivial.\n";
+}
+
+// 这样写的好处:
+// 利用SFINAE特性实现了通过不同返回值，相同函数参数进行重载，这样代码看起来
+//              更加统一一些。std::enable_if
+//              还可以在模版参数列表中，利用SFINAE特性 来实现某些函数的选择推导.
+
+namespace detail {
+struct inplace_t {};
+} // namespace detail
+void *operator new(std::size_t, void *p, detail::inplace_t) { return p; }
+
+// enable via the return type
+template <typename T, typename... Args>
+typename std::enable_if_t<std::is_trivially_constructible_v<T, Args &&...>>
+construct(T *t, Args &&...args) {
+  std::cout << "constructing trivially constructible T\n";
+}
+
+// enabled via a parameter.
+template <typename T>
+void destroy(
+    T *t,
+    typename std::enable_if_t<std::is_trivially_destructible_v<T>> * = 0) {
+  std::cout << "destroying trivially destructible T\n";
+}
+
+// enabled via a template parameter.
+template <typename T, typename std::enable_if_t<
+                          !std::is_trivially_destructible_v<T> &&
+                              (std::is_class_v<T> || std::is_union_v<T>),
+                          int> = 0>
+void destroy(T *t) {
+  std::cout << "destroying non-trivially destructible T\n";
+  t->~T();
+}
+
+TEST(chap_6_move_semantics, enable_if_sfinae_test) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  SFINAE_test(std::string("123"));
+  SFINAE_test(123);
+
+  oss << "T is non-trivial.\n"
+      << "T is trivial type.\n";
 
   std::string act_output = testing::internal::GetCapturedStdout();
 
