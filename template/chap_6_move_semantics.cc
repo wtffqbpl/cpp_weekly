@@ -194,3 +194,185 @@ TEST(chap_6_move_semantics, enable_if_sfinae_test) {
 
   EXPECT_TRUE(oss.str() == act_output);
 }
+
+namespace chap_6_enable_if {
+class Person {
+public:
+  // generic constructor for passed initial name:
+  template <typename STR>
+  explicit Person(STR &&Name) : Name_(std::forward<STR>(Name)) {
+    std::cout << "TMPL-CONSTR for '" << Name_ << "'\n";
+  }
+
+  // copy and move constructor:
+  Person(Person const &p) : Name_(p.Name_) {
+    std::cout << "COPY-CONSTR Person '" << Name_ << "'\n";
+  }
+
+  Person(Person &&p) : Name_(std::move(p.Name_)) {
+    std::cout << "MOVE-CONSTR Person '" << Name_ << "'\n";
+  }
+
+private:
+  std::string Name_;
+};
+
+/// \code
+/// std::string s = "sname";
+/// Person p1(s);     // init with string object => calls TMPL-CONSTR
+/// Person p2("tmp"); // init with string literal => calls TMPL-CONSTR
+///
+/// Person p3(p1); // ERROR since template matching machinism
+///                // for a non-constant lvalue Person p, member template is
+///                // prior than copy constructor.
+///                // 因为对于模版来说，直接将STR替换成 Person&
+///                // 而copy constructor 还需要一次const 转换
+///                //
+///                我们这里其实需要的是当参数类型是Person类型的non-constant变量时，
+///                // 需要禁用掉 member template. 这里可以通过
+///                std::enable_if<>实现
+///
+/// Person const p2c("ctmp"); // init constant object with string literal.
+/// Person p3c(p2c); // OK: copy constant Person => calls COPY-CONSTR
+/// Person p4(std::move(p1)); // OK: move Person => calls MOVE-CONST
+/// \endcode
+
+// std::enable_if<> 是一种类型萃取(type trait),
+// 会根据给定的一个编译时期的表达式来 确定其行为:
+// 1. 如果这个表达式为true, std::enable_if<>::type 会返回:
+//     * 如果没有第二个模版参数，返回类型是void(这个是因为std::enable_if
+//     的default参数为void.
+//     * 否则，返回类型是其第二个参数的类型
+// 2. 如果表达式结果为false, std::enable_if<>::type 不会被定义.
+//    是根据 SFINAE (substitute failure is not an error)
+
+/// \code
+/// template <typename T>
+/// std::enable_if_t<sizeof(T) > 4), T>
+/// foo() { return T{}; }
+/// \endcode
+/// 如果上述enable_if_t 的第一个模版参数为true,那么展开后得到的代码如下
+/// \code
+/// MyType foo() {
+///   return MyType{};
+/// }
+/// \endcode
+
+// 如果觉得将 enable_if<> 放在声明中有些丑陋的话，通常的做法是:
+/// \code
+/// template <typename T,
+///           typename = std::enable_if_t<(sizeof(T) > 4>>
+/// void foo() { }
+/// \endcode
+// 当sizeof(T) > 4时，这会被展开为:
+/// \code
+/// template <typename T,
+///           typename = void>
+/// void foo() { }
+/// \endcode
+
+// 还有一种比较常见的用法:
+/// \code
+/// template <typename T>
+/// using EnableIfSizeGreater4 = std::enable_if_t<(sizeof(T) > 4)>;
+///
+/// template <typename T,
+///           typename = EnableIfSizeGreater4<T>>
+/// void foo() { }
+/// \endcode
+
+// 使用enable_if<> 来解决实际问题
+
+template <typename T>
+using EnableIfString = std::enable_if_t<std::is_convertible_v<T, std::string>>;
+
+class Person_enable_if {
+public:
+  // generic constructor for passed initial name:
+  template <typename STR, typename = EnableIfString<STR>>
+  explicit Person_enable_if(STR &&Name) : Name_(std::forward<STR>(Name)) {
+    std::cout << "TMPL-CONSTR for '" << Name_ << "'\n";
+  }
+
+  // copy and move constructor:
+  Person_enable_if(Person_enable_if const &p) : Name_(p.Name_) {
+    std::cout << "COPY-CONSTR Person '" << Name_ << "'\n";
+  }
+
+  Person_enable_if(Person_enable_if &&p) noexcept : Name_(std::move(p.Name_)) {
+    std::cout << "MOVE-CONSTR Person '" << Name_ << "'\n";
+  }
+
+private:
+  std::string Name_;
+};
+
+// 核心点:
+//  * 使用using 来简化std::enable_if<> 在成员模版函数中的写法
+//  * 当构造函数的参数不能转换为string时，禁止使用该函数
+
+template <typename T = int> class C {
+public:
+  C() = default;
+
+  // There is a tricky solution, though. We can declare a copy constructor for
+  // const volatile arguments and mark it "deleted". Doing so prevents another
+  // copy constructor from being implicitly declared. With that in place, we can
+  // define a constructor template that will be preferred over the (deleted)
+  // copy constructor for nonvolatile types:
+
+  // user-define the predefined copy constructor as deleted,
+  // with conversion to volatile to enable better matches.
+  C(C const volatile &) = delete;
+
+  // if T is no integral type, provide copy constructor template with better
+  // match.
+  template <typename U, typename = std::enable_if_t<!std::is_integral_v<U>>>
+  C(C<U> const &) {
+    std::cout << "tmpl copy constructor\n";
+  }
+
+  C(T const &) { std::cout << "integer tmpl copy constructor.\n"; }
+};
+
+} // end of namespace chap_6_enable_if
+
+TEST(chap_6_move_semantics, dis_special_member_function_with_enable_if_test) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  chap_6_enable_if::C<std::string> x;
+  chap_6_enable_if::C<std::string> y{x};
+
+  oss << "tmpl copy constructor\n";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
+
+// SUMMARY
+// 1. In templates, you can "perfectly" forward parameters by declaring them as
+//    forwarding references (declared with a type formed with the name of a
+//    template parameter followed by &&) and using std::forward<>() in the
+//    forwarded call.
+// 2. When using perfect forwarding member function templates, they might match
+//    better than the predefined special member function to copy or move object.
+// 3. With std:enable_if<>, you can disable a function template when a
+//    compile-time condition is false (the template is then ignored once that
+//    condition has been determined).
+// 4. By using std::enable_if<> you can avoid problems when constructor
+//    templates or assignment operator templates that can be called for single
+//    arguments are a better match than implicitly generated special member
+//    functions.
+// 5. You can templify (and apply enable_if<>) to special member functions by
+//    deleting the pre-defined special member functions for const volatile.
+// 6. Concepts will allow us to use a more intuitive syntax for requirements
+//    on function templates.
