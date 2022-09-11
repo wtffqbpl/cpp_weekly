@@ -30,6 +30,7 @@ add_executable(cpp_weekly
         conversion_function/conversion_function.cc
 
         class/class_test.cc
+        class/inheritance_test.cc
 
         formatting/formatting_test.cc
 
@@ -67,6 +68,7 @@ add_executable(cpp_weekly
         strings/string_test.cc
         strings/string_view_test.cc
 
+        template/appendix_b.cc
         template/chap_1_function_templates.cc
         template/chap_2_class_templates.cc
         template/chap_3_nontype_template_parameters.cc
