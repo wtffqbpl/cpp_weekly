@@ -55,6 +55,8 @@ add_executable(cpp_weekly
         misc/std_copy_test.cc
         misc/typeinfo_test.cc
 
+        optimizations/small_string_optimization.cc
+
         pointer_like_classes/iterator_case_test.cc
         pointer_like_classes/shared_ptr_test.cc
 
@@ -75,6 +77,7 @@ add_executable(cpp_weekly
         template/chap_4_variadic_templates.cc
         template/chap_5_tricky_basics.cc
         template/chap_6_move_semantics.cc
+        template/chap_7_by_value_or_by_reference.cc
         template/class_template_test.cc
         template/function_template_test.cc
         template/partial_specialization_test.cc
