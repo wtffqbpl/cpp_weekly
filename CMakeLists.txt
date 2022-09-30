@@ -24,6 +24,7 @@ enable_testing()
 file(GLOB_RECURSE cpp_weekly_srcs *.cc)
 # add_executable(cpp_weekly ${cpp_weekly_srcs})
 add_executable(cpp_weekly
+        algorithms/partition_test.cc
         algorithms/transform_test.cc
         algorithms/std_generate_test.cc
 
@@ -78,6 +79,7 @@ add_executable(cpp_weekly
         template/chap_5_tricky_basics.cc
         template/chap_6_move_semantics.cc
         template/chap_7_by_value_or_by_reference.cc
+        template/chap_8_compile_time_programming.cc
         template/class_template_test.cc
         template/function_template_test.cc
         template/partial_specialization_test.cc
