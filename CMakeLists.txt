@@ -24,6 +24,7 @@ enable_testing()
 file(GLOB_RECURSE cpp_weekly_srcs *.cc)
 # add_executable(cpp_weekly ${cpp_weekly_srcs})
 add_executable(cpp_weekly
+        algorithms/accumulate_test.cc
         algorithms/partition_test.cc
         algorithms/transform_test.cc
         algorithms/std_generate_test.cc
