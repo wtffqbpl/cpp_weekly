@@ -41,6 +41,7 @@ add_executable(cpp_weekly
         functional/functional_test.cc
 
         functional_programming/chap_1_introduction.cc
+        functional_programming/function_object.cc
 
         future/future_test.cc
 
