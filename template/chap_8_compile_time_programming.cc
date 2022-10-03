@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <type_traits>
 
 template <unsigned p, unsigned d> struct DoIsPrime {
   static constexpr bool value = (p % d != 0) && DoIsPrime<p, d - 1>::value;
@@ -103,3 +104,102 @@ template <typename T, std::size_t SZ> long foo(std::array<T, SZ> const &coll) {
 template <typename T, unsigned N> size_t len(T (&)[N]) noexcept { return N; }
 // number of elements for a type having size_type:
 //  template T::size_type len(T const &t) { return t.size(); }
+
+// 8.4.1 Expression SFINAE with decltype
+template <typename T> typename T::size_type len_8_4_1(T const &t) {
+  return t.size();
+}
+
+// this will be failed when dealing following case:
+/// \code
+/// std::allocator<int> x;
+/// std::cout << len_8_4_1(x) << '\n'; // ERROR: len() selected, but x has no
+///                                    // size()
+/// \endcode
+
+// There is a common pattern or idiom to deal with such a situation.
+//  * Specify the return type with the trailing return type syntax (use auto
+//    at the front and -> before the return type at the end).
+//  * Define the return type using decltype and the comma operator.
+//  * Formulate all expressions that must be valid at the beginning of the comma
+//    operator (converted to void in case in the comma operator is overloaded).
+//  * Define an object of the real return type at the end of the comma operator.
+//  for example:
+template <typename T>
+auto len_8_4_1_new(T const &t) -> decltype((void)(t.size()), T::size_type()) {
+  return t.size();
+}
+// Here, the return type is given by:
+// decltype((void)(t.size()), T::size_type())
+
+// 8.5 Compile-time if
+// With the syntax if constexpr(...), the compiler uses a compile-time
+// expression to decide whether to apply the then part or the else part
+// (if any).
+// For example:
+template <typename T, typename... Types>
+void print_8_5(T const &firstArg, Types const &...args) {
+  std::cout << firstArg << '\n';
+  if constexpr (sizeof...(args) > 0) {
+    print_8_5(args...); // code only available if sizeof...(args) > 0(since 17).
+  }
+}
+
+TEST(chap_8_compile_time_programming, compile_time_if_test) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  print_8_5("test", "compile", "if", 1, 2, "hello", "world");
+  oss << "test\n"
+      << "compile\n"
+      << "if\n"
+      << "1\n"
+      << "2\n"
+      << "hello\n"
+      << "world\n";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
+
+// The fact that the code is not instantiated means that only the first
+// translation phase (the definition time) is performed, which checks for
+// correct syntax and names that don't depend on template parameters.
+// e.g.
+template <typename T> void foo(T t) {
+  if constexpr (std::is_integral_v<T>) {
+    if (t > 0)
+      foo(t - 1);
+  } else {
+    // error if not declared and not discarded.
+    std::undeclare_reachable(t);
+    static_assert(!std::is_integral_v<T>, "no integral");
+  }
+}
+
+// Not that if constexpr can be used in any function, not only in templates.
+// We only need a compile-time expression that yields a Boolean value.
+
+// Summary
+//  * Templates provide the ability to compute at compile time (using recursion
+//    to iterate and partial specialization or operator ?: for selections).
+//  * With constexpr functions, we can replace most compile-time computations
+//    with "ordinary functions" that are callable in compile-time contexts.
+//  * With partial specialization, we can choose between different
+//    implementations of class templates based on certain compile-time
+//    constraints.
+//  * Templates are used only if needed and substitutions in function template
+//    declarations do not result in invalid code. This principle is called
+//    SFINAE (substitution failure is not an error).
+//  * SFINAE can be used to provide function templates only for certain types
+//    and/or constraints.
+//  * Since C++17, a compile-time if allows us to enable or discard statements
+//    according to compile-time conditions (even outside templates).
