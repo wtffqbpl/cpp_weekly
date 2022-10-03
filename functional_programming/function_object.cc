@@ -122,3 +122,19 @@ TEST(lambda_test, move_type_test) {
 
   EXPECT_TRUE(on_completed());
 }
+
+class error_test_t {
+  bool error_;
+
+public:
+  explicit error_test_t(bool error = true) : error_(error) {}
+
+  template <typename T> bool operator()(T &&value) const {
+    return error_ == static_cast<bool>(std::forward<T>(value).error());
+  }
+
+  error_test_t operator==(bool test) const {
+    return error_test_t(test ? error_ : !error_);
+  }
+  error_test_t operator!() const { return error_test_t(!error_); }
+};

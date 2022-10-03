@@ -4,6 +4,12 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
+// std::function
+// 虽然很有用，但是因为它有明显的性能问题，为了隐藏包含的类型并提供一个对
+// 所有可调用类型的通用接口，std::function 使用类型擦除(type
+// erasure)的技术,该技术基于
+// 虚成员函数调用，因为虚函数在运行时进行的，编译器不能在线调用，因此失去了优化的机会。
+
 int do_something(int i) { return 5 + i; }
 
 struct S {

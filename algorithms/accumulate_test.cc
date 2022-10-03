@@ -9,7 +9,7 @@ TEST(accumulate_test, basics) {
 
   int sum = std::accumulate(v.begin(), v.end(), 0);
 
-  int product = std::accumulate(v.begin(), v.end(), 1, std::multiplies<int>());
+  int product = std::accumulate(v.begin(), v.end(), 1, std::multiplies<>());
 
   auto dash_fold = [](std::string a, int b) {
     return std::move(a) + '-' + std::to_string(b);
@@ -135,4 +135,27 @@ TEST(accumulate_test, impl_all_of) {
                               });
 
   EXPECT_FALSE(res2);
+}
+
+TEST(accumulate_test, multiply_test) {
+  std::vector<int> pool{1, 2, 3, 4};
+
+  // 在这里，推荐使用 std::multiplies<>(), 不推荐使用 std::multiplies<int>(),
+  // 原因是： 从
+  // c++14开始，无需再指明类型，因为在调用时会自动推断参数的类型。如果使用的compiler
+  // 和标准库是c++14兼容的，那么就推荐这种写法，除非比较之前想把参数强制转换成特定的类型。
+  // 例如, 从大到小排序:
+  /// \code
+  /// std::sort(numbers.begin(), numbers.end(), std::greater<>());
+  /// \endcode
+
+  auto val = std::accumulate(pool.begin(), pool.end(), 1, std::multiplies<>());
+
+#ifndef NDEBUG
+  std::cout << "The product of std::vector<int> {1, 2, 3, 4} is:\n"
+            << "Expected result = " << 24 << '\n'
+            << "Actual result = " << val << '\n';
+#endif
+
+  EXPECT_EQ(val, 24);
 }
