@@ -58,6 +58,9 @@ add_executable(cpp_weekly
         misc/std_copy_test.cc
         misc/typeinfo_test.cc
 
+        new_features/cpp_17/inline_variable/inline_variable_main.cc
+        new_features/cpp_17/inline_variable/func.cc
+
         optimizations/small_string_optimization.cc
 
         pointer_like_classes/iterator_case_test.cc
@@ -83,6 +86,7 @@ add_executable(cpp_weekly
         template/chap_7_by_value_or_by_reference.cc
         template/chap_8_compile_time_programming.cc
         template/chap_11_generic_libraries.cc
+        template/chap_12_fundamentals_in_depth.cc
         template/class_template_test.cc
         template/function_template_test.cc
         template/partial_specialization_test.cc
@@ -94,7 +98,9 @@ add_executable(cpp_weekly
         youtube/e340_string_split_test.cc
         )
 
-include_directories(include)
+include_directories(include
+        new_features/cpp_17/inline_variable
+        )
 
 target_link_libraries(
         cpp_weekly
