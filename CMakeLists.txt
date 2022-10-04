@@ -82,10 +82,12 @@ add_executable(cpp_weekly
         template/chap_6_move_semantics.cc
         template/chap_7_by_value_or_by_reference.cc
         template/chap_8_compile_time_programming.cc
+        template/chap_11_generic_libraries.cc
         template/class_template_test.cc
         template/function_template_test.cc
         template/partial_specialization_test.cc
         template/ref_cref_test.cc
+        template/sfinae_test.cc
         template/using_template_test.cc
 
         youtube/cpp_weekly_youtube_test.cc
