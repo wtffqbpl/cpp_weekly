@@ -1,5 +1,6 @@
 #include <functional>
 #include <gtest/gtest.h>
+#include <memory>
 #include <type_traits>
 #include <utility>
 
@@ -227,3 +228,172 @@ public:
     }
   }
 };
+
+// 11.2.2 std::addressof()
+// The std::addressof<>() function template yields the actual address of an
+// object or function. It works even if the object type has an overloaded
+// operator &. Even though the latter s somewhat rare, it might happen.
+// Thus, it is recommended to use addressof() if you need an address of an
+// object of arbitrary type:
+// 常用于原本要使用operator&
+// 的地方，它接受一个参数，该桉树为要获得地址的那个对象的引用。 一般，若operator
+// &() 也被重载且不一致的话，那么用 std::addressof 来替代。 std::addressof
+// defined in header <memory> You use std::addressof when you have to. Sadly,
+// "when you have to" includes anytime you are working in template code and want
+// to turn a variable of unknown type T or T& into an honest-to-God pointer to
+// that variable's memory.
+//
+// You should use std::addressof instead of & in any template implementation
+// taking the address of a user-defined object. Doing so is not a perfect
+// solution as it might cause unexpected behavior with types relying on an
+// overloaded & operator (some argu it is an appropriate and just punishment for
+// developers dabbling in this dark art). However, it is possible to detect the
+// conflict of address reporting and template expectations in debug builds with
+// assert (std::addressof(t) == &t).
+
+template <typename T> struct Ptr {
+  T *pad;
+  T *data;
+
+  explicit Ptr(T *arg) : pad(nullptr), data(arg) {
+    std::cout << "Ctor this = " << this << '\n';
+  }
+
+  ~Ptr() { delete data; }
+  T **operator&() { return &data; }
+};
+
+template <typename T> void f(Ptr<T> *p) {
+  std::cout << "Ptr overload called with p = " << p << '\n';
+}
+
+void f(int **p) { std::cout << "int** overload called with p = " << p << '\n'; }
+
+int test_addressof_1() {
+  Ptr<int> p{new int{42}};
+  f(&p);                // calls int** overload
+  f(std::addressof(p)); // calls Ptr<int>* overload, (= this)
+
+  return 0;
+}
+
+// reference: http:// www.cplusplus.com/reference/memory/addressof/
+struct unreferneceable {
+  int x;
+  unreferneceable *operator&() { return nullptr; }
+};
+
+void print(unreferneceable *m) {
+  if (m)
+    std::cout << m->x << '\n';
+  else
+    std::cout << "[null pointer]\n";
+}
+
+int test_addressof_2() {
+  void (*pfn)(unreferneceable *) = &print;
+
+  unreferneceable val{10};
+  unreferneceable *foo = &val;
+  unreferneceable *bar = std::addressof(val);
+
+  (*pfn)(foo); // print [null pointer]
+  (*pfn)(bar); // print 10
+
+  return 0;
+}
+
+// reference: http://cppisland.com/?p=414
+class Buffer {
+private:
+  static constexpr size_t buffer_size_ = 256;
+  int buffer_id_;
+  char buffer_[buffer_size_] = {0};
+
+public:
+  explicit Buffer(int buffer_id) : buffer_id_(buffer_id) {}
+  // BAD practice, only for illustration!
+  Buffer *operator&() { return reinterpret_cast<Buffer *>(&buffer_); }
+};
+
+template <typename T> void getAddress(T t) {
+  std::cout << "Address returned by & operator: " << std::ios::hex << &t
+            << '\n';
+  std::cout << "Address returned by addressof: " << std::ios::hex
+            << std::addressof(t) << '\n';
+}
+
+int test_addressof_3() {
+  int a = 3;
+  fprintf(stderr, "a &: %p, address of: %p\n", &a, std::addressof(a));
+
+  Buffer b{1};
+  std::cout << "Getting the address of a Buffer type: \n";
+  getAddress(b);
+
+  return 0;
+}
+
+// reference: https://wizardforcel.gitbooks.io/beyond-stl/content/38.html
+class code_breaker {
+public:
+  int operator&() const { return 13; }
+};
+
+int test_addressof_4() {
+  code_breaker c;
+  std::cout << "&c: " << (&c) << '\n';
+  std::cout << "addressof(t): " << std::addressof(c) << '\n';
+
+  return 0;
+}
+
+TEST(chap_11_generic_libraries, addressof_test) {
+  test_addressof_1();
+  test_addressof_2();
+  test_addressof_3();
+  test_addressof_4();
+}
+
+// 11.3 Perfect forwarding temporaries.
+// Sometimes we have to perfectly forward data in generic code that does not
+// come through a parameter. In that case, we can use auto&& to create a
+// variable that can be forwarded.
+// Assume that we have chained calls to functions get() and set() where the
+// return value of get() should be perfectly forwarded to set():
+/// \code
+/// template <typename T>
+/// void foo(T x) {
+///   set(get(x));
+/// }
+/// \endcode
+// We do this by holding the value in a variable declared with auto&&.
+/// \code
+/// template <typename T>
+/// void foo(T x) {
+///   auto&& val = get(x);
+///   // perfectly forward the return value of get() to set().
+///   set(std::forward<decltype(val)>(val));
+/// }
+/// \endcode
+// This avoids extraneous copies of the intermediate value.
+
+// SUMMARY
+//  * Templates allow you to pass functions, function pointers,
+//    function objects, functors, and lambdas as callables.
+//  * When defining classes with an overloaded operator(), declare it as const
+//    (unless the call changes its state).
+//  * With std::invoke(), you can implement code that can handle all callables,
+//    including member functions.
+//  * Use decltype(auto) to forward a return value perfectly.
+//  * Type traits are type functions that check for properties and capabilities
+//    of types.
+//  * Use std::addressof() when you need the address of an object in a template.
+//  * Use std::declval() to create values of specific types in unevaluated
+//    expressions.
+//  * Use auto&& to perfectly forward objects in generic code if their type does
+//    not depend on template parameters.
+//  * Be prepared to deal with the side effects of template parameters being
+//    references.
+//  * You can use templates to defer the evaluation of expressions. (e.g. to
+//    support using incomplete types in class templates).
