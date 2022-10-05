@@ -55,6 +55,7 @@ add_executable(cpp_weekly
         misc/new_delete_test.cc
         misc/optional_test.cc
         misc/random_test.cc
+        misc/shared_mutex_test.cc
         misc/std_copy_test.cc
         misc/typeinfo_test.cc
 
