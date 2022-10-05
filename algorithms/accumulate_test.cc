@@ -148,6 +148,10 @@ TEST(accumulate_test, multiply_test) {
   /// \code
   /// std::sort(numbers.begin(), numbers.end(), std::greater<>());
   /// \endcode
+  // 在C++14中，对于std::multiplies 函数来说，c++14 特化了一个参数为 void
+  // 的实现, 该实现中，会根据multiplies
+  // 函数的两个输入参数的类型，来推断返回值的类型, 因此无需 再次指定返回值类型,
+  // 直接使用特化后的sd::multiplies即可.
 
   auto val = std::accumulate(pool.begin(), pool.end(), 1, std::multiplies<>());
 
