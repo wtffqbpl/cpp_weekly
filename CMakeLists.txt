@@ -30,6 +30,8 @@ add_executable(cpp_weekly
         algorithms/std_generate_test.cc
 
         concurrent/create_thread.cc
+        concurrent/producer_consumer.cc
+
         conversion_function/conversion_function.cc
 
         class/class_test.cc
