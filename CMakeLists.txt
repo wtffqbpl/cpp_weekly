@@ -29,6 +29,7 @@ add_executable(cpp_weekly
         algorithms/transform_test.cc
         algorithms/std_generate_test.cc
 
+        concurrent/create_thread.cc
         conversion_function/conversion_function.cc
 
         class/class_test.cc
