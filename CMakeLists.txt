@@ -61,6 +61,7 @@ add_executable(cpp_weekly
         misc/shared_mutex_test.cc
         misc/std_copy_test.cc
         misc/typeinfo_test.cc
+        misc/reference_cnt_demo/reference_cnt.cc
 
         new_features/cpp_17/inline_variable/inline_variable_main.cc
         new_features/cpp_17/inline_variable/func.cc
@@ -104,6 +105,7 @@ add_executable(cpp_weekly
 
 include_directories(include
         new_features/cpp_17/inline_variable
+        misc/reference_cnt_demo
         )
 
 target_link_libraries(
