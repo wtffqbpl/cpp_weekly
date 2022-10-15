@@ -99,6 +99,8 @@ add_executable(cpp_weekly
         template/sfinae_test.cc
         template/using_template_test.cc
 
+        topics/deep_vs_shallow/deep_vs_shallow_main.cc
+
         youtube/cpp_weekly_youtube_test.cc
         youtube/e340_string_split_test.cc
         )
@@ -106,6 +108,7 @@ add_executable(cpp_weekly
 include_directories(include
         new_features/cpp_17/inline_variable
         misc/reference_cnt_demo
+        topics/deep_vs_shallow
         )
 
 target_link_libraries(
