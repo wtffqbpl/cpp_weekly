@@ -18,7 +18,7 @@ TEST(deep_vs_shallow, basic_test) {
   std::copy(obj_a.begin(), obj_a.end(),
             std::ostream_iterator<int>(std::cout, " "));
   std::cout << '\n';
-  oss << "100 1 2 3 4 5 6 7 8 9\n";
+  oss << "100 1 2 3 4 5 6 7 8 9 \n";
 
   // 2. deep copy.
   Deep obj_c;
@@ -31,9 +31,10 @@ TEST(deep_vs_shallow, basic_test) {
   std::copy(obj_c.begin(), obj_c.end(),
             std::ostream_iterator<int>(std::cout, " "));
   std::cout << '\n';
-  oss << "0 1 2 3 4 5 6 7 8 9\n";
+  oss << "0 1 2 3 4 5 6 7 8 9 \n";
 
-  delete obj_b;
+  // FIXME: how to delete this object???
+  // delete obj_b;
   delete obj_d;
 
   std::string act_output = testing::internal::GetCapturedStdout();

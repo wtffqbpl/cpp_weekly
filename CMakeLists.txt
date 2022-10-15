@@ -100,6 +100,7 @@ add_executable(cpp_weekly
         template/using_template_test.cc
 
         topics/deep_vs_shallow/deep_vs_shallow_main.cc
+        topics/memory_block_management/memory_block_management_main.cc
 
         youtube/cpp_weekly_youtube_test.cc
         youtube/e340_string_split_test.cc
@@ -109,6 +110,7 @@ include_directories(include
         new_features/cpp_17/inline_variable
         misc/reference_cnt_demo
         topics/deep_vs_shallow
+        topics/memory_block_management
         )
 
 target_link_libraries(
