@@ -93,6 +93,7 @@ add_executable(cpp_weekly
         template/chap_11_generic_libraries.cc
         template/chap_12_fundamentals_in_depth.cc
         template/class_template_test.cc
+        template/enable_if_test.cc
         template/function_template_test.cc
         template/partial_specialization_test.cc
         template/ref_cref_test.cc

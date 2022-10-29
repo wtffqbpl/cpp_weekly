@@ -11,7 +11,7 @@ private:
   std::chrono::high_resolution_clock::time_point Start;
 
 public:
-  Timer(const std::string_view &Title_) : Title(Title_) {
+  explicit Timer(const std::string_view &Title_) : Title(Title_) {
     Start = std::chrono::high_resolution_clock::now();
   }
 
@@ -31,7 +31,7 @@ private:
     std::chrono::nanoseconds ms =
             std::chrono::duration_cast<std::chrono::nanoseconds>(Stop - Start);
 #ifndef NDEBUG
-    std::cout << Title << " " << static_cast<double>((ms.count()) * 0.001) << "s\n";
+    std::cout << Title << " " << (static_cast<double>(ms.count()) * 0.001) << "s\n";
 #endif
   }
 };

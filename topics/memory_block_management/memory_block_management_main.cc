@@ -7,8 +7,8 @@ TEST(memory_block, basic_test) {
 
   std::vector<MemoryBlock> pool;
 
-  pool.emplace_back(MemoryBlock{25});
-  pool.emplace_back(MemoryBlock{75});
+  pool.emplace_back(25);
+  pool.emplace_back(75);
 
   // Insert a new element into the second position of the vector.
   pool.insert(pool.begin() + 1, MemoryBlock{50});

@@ -2,6 +2,7 @@
 #include <ctime>
 #include <iostream>
 #include <fstream>
+#include <functional>
 #include <sstream>
 
 void write_something(std::ostream &os) {
@@ -102,4 +103,24 @@ TEST(IOTest, std_endl_test) {
 #endif
 
   EXPECT_TRUE(endl_time_eclipse > char_n_time_eclipse);
+}
+
+TEST(IOTest, cout_lambda_test) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  [out = std::ref(std::cout << "Hello")]() { out.get() << " world\n"; }();
+
+  oss << "Hello world\n";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  std::cout << "Expected output:\n"
+            << oss.str() << '\n'
+            << "Actual output:\n"
+            << act_output << '\n';
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
 }
