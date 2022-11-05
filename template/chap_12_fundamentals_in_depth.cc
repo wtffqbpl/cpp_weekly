@@ -597,8 +597,11 @@ C<int *, &a> *c2; // address of an external variable
 C<void (*)(int), f> *c3; // name of a function: overload resolution selects
                          // f(int) in this case; the & is implied.
 
-C<void(), &temp_func<double>> *c4; // function template instantiations
-                                   // are functions.
+// FIXME: I don't know why this introduce an error in github action. I have
+//        already set the c++ standard in cmake.
+// error: ‘void()’ is not a valid type for a template non-type parameter
+// C<void(), &temp_func<double>> *c4; // function template instantiations
+// are functions.
 
 C<bool &, XNonType::b> *c5; // static class members are acceptable
                             // variable/function names.
@@ -636,7 +639,6 @@ namespace {
 // parameter be at least as specialized as the corresponding template template
 // argument. Eg.
 
-#include <list>
 // declares in namespace std;
 // template <typename T, typename Allocator = allocator<T>>
 // class list;
@@ -645,6 +647,6 @@ template <typename T1, typename T2,
           template <typename> class Cont> // Cont expects one parameter
 class Rel {};
 
-Rel<int, double, std::list> rel; //
+// Rel<int, double, std::list> rel; //
 
 } // namespace

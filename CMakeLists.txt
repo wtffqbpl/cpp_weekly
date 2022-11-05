@@ -51,6 +51,7 @@ add_executable(cpp_weekly
         io/io_test.cc
 
         meta_programming/limits_test.cc
+        meta_programming/type_traits_test.cc
 
         misc/class_related_hash_function.cc
         misc/constexpr_test.cc
