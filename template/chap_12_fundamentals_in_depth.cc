@@ -286,7 +286,7 @@ struct GetterImpl<Ptr> {
 template <auto Ptr> auto NewGetter = GetterImpl<Ptr>::Get;
 
 void test4() {
-  X xs[]{{1, 2.2}, {3, 4.4}, {5, 6.6}, {7, 8.8}};
+  X xs[] = {{1, 2.2}, {3, 4.4}, {5, 6.6}, {7, 8.8}};
 
   std::cout << "int:\n";
   std::transform(std::begin(xs), std::end(xs),
@@ -498,3 +498,153 @@ TEST(template_auto, test1) {
   debug_msg(oss, act_output);
   EXPECT_TRUE(oss.str() == act_output);
 }
+
+namespace {
+// A template parameter for a class template, variable template, or alias
+// template can have a default template argument only if default arguments were
+// also supplied for the subsequent parameters.
+// e.g.
+
+template <typename T1, typename T2, typename T3, typename T4 = char,
+          typename T5 = char>
+class Quintuple; // OK
+
+template <typename T1, typename T2, typename T3 = char, typename T4,
+          typename T5>
+class Quintuple; // OK: T4 and T5 already have defaults.
+
+// template <typename T1 = char, typename T2, typename T3,
+//           typename T4, typename T5>
+// class Quintuple; // ERROR: T2 hasn't default.
+
+// Default template arguments for template parameters of function templates do
+// not require subsequent template parameters to have a default template
+// argument.
+template <typename R = void, typename T>
+R *address_of(T &value); // OK: if not explicitly specified, R will be void.
+
+// NOTE: Default template arguments cannot be repeated.
+} // namespace
+
+namespace {
+
+// 12.3 Template Arguments
+template <typename Func, typename T> void apply(Func funcPtr, T x) {
+  funcPtr(x);
+}
+
+template <typename T> void single(T){};
+
+template <typename T> void multi(T){};
+template <typename T> void multi(T *){};
+
+int test() {
+  apply(&single<int>, 3); // OK
+
+  // ERROR:
+  // No matching function for call to 'apply' candidate template ignored:
+  // couldn't infer template argument 'Func'
+  // apply(&multi<int>, 7);
+
+  // Because function templates can be overloaded, explicitly providing all the
+  // arguments for a function template may not be sufficient to identify a
+  // single function.
+  // &multi<int> could be one of two different types and therefore Func cannot
+  // be deduced in this case.
+
+  return 0;
+}
+
+template <typename T> void test_rt1(typename T::X const *){};
+template <typename T> void test_rt1(...) {}
+
+// The Expression test_rt1<int> identifies the address of a single function (the
+// second one, test_rt1(...)). The fact that the substitution of int into the
+// first template fails does not make the expression invalid. This SFINAE
+// (substitution failure is not an error) principle is an important ingredient
+// to make the overloading of function templates practical.
+
+// 12.3.3 Non-type Arguments
+// Here are some valid examples of non-type template arguments:
+// A general constraint of template arguments is that a compiler or a linker
+// must be able to express their value when the program is being built. Values
+// that aren't known until a program is run aren't compatible with the notion
+// that templates are instantiated when the program is built.
+// Even so, there are some constant values that are, perhaps surprisingly,
+// not currently valid:
+//  * Floating-point numbers
+//  * String literals
+
+template <typename T, T nonTypeParam> class C;
+
+void f() {}
+void f(int) {}
+
+template <typename T> void temp_func() {}
+
+struct XNonType {
+  static bool b;
+  int n;
+
+  constexpr operator int() const { return 42; }
+};
+
+C<int, 33> *c1; // integer type
+
+int a;
+C<int *, &a> *c2; // address of an external variable
+
+C<void (*)(int), f> *c3; // name of a function: overload resolution selects
+                         // f(int) in this case; the & is implied.
+
+C<void(), &temp_func<double>> *c4; // function template instantiations
+                                   // are functions.
+
+C<bool &, XNonType::b> *c5; // static class members are acceptable
+                            // variable/function names.
+
+C<int XNonType::*, &XNonType::n> *c6; // an example of a pointer-to-member
+                                      // constant
+
+C<long, XNonType{}> *c7; // OK: XNonType is first converted to int via a
+                         // constexpr conversion function and then to long
+                         // via a standard integer conversion.
+
+// Introducing an additional variable to hold the string for constant string
+// template arguments.
+
+template <char const *str> class Message {};
+
+extern char const hello[] = "Hello World!";
+char const hello11[] = "Hello World!";
+
+void foo_test() {
+  static char const hello17[] = "hello world!";
+  Message<hello> msg03;   // OK in all versions.
+  Message<hello11> msg11; // OK since c++11
+  Message<hello17> msg17; // OK since c++17
+}
+
+} // namespace
+
+namespace {
+// 12.3.4 Template Template Arguments
+// A template template argument must generally be a class template or alias
+// template with parameters that exactly match the parameters of the template
+// template parameter it substitutes.
+// C++17 relaxed the matching rule to just require that the template template
+// parameter be at least as specialized as the corresponding template template
+// argument. Eg.
+
+#include <list>
+// declares in namespace std;
+// template <typename T, typename Allocator = allocator<T>>
+// class list;
+
+template <typename T1, typename T2,
+          template <typename> class Cont> // Cont expects one parameter
+class Rel {};
+
+Rel<int, double, std::list> rel; //
+
+} // namespace
