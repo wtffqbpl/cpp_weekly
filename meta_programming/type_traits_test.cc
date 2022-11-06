@@ -42,3 +42,32 @@ TEST(type_traits_test, conditional_test) {
 
   EXPECT_TRUE(oss.str() == act_output);
 }
+
+#define SHOW(...) std::cout << #__VA_ARGS__ " : " << std::__VA_ARGS__ << '\n'
+
+// Reference: [is_base_of](https://en.cppreference.com/w/cpp/types/is_base_of)
+TEST(type_traits_test, is_base_of_test) {
+  class A {};
+  class B : A {};
+  class C : B {};
+  class D {};
+
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  std::cout << std::boolalpha;
+  SHOW(is_base_of_v<A, A>);
+  SHOW(is_base_of_v<A, B>);
+  SHOW(is_base_of_v<A, C>);
+  SHOW(is_base_of_v<A, D>);
+  SHOW(is_base_of_v<B, A>);
+  oss << "is_base_of_v<A, A> : true\n"
+         "is_base_of_v<A, B> : true\n"
+         "is_base_of_v<A, C> : true\n"
+         "is_base_of_v<A, D> : false\n"
+         "is_base_of_v<B, A> : false\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+  debug_msg(oss, act_output);
+  EXPECT_TRUE(oss.str() == act_output);
+}

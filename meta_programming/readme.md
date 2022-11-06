@@ -8,8 +8,6 @@ Author: Jody Hagins
 [Template Metaprogramming: Type Traits Part II](https://www.youtube.com/watch?v=dLZcocFOb5Q)
 ---
 
-[TOC]
-
 # Learning materials.
 
 - Modern Template Metaprogramming: A Compendium, Part I, Walter E. Brown,
@@ -707,6 +705,345 @@ template <typename T1, typename T2>
 constexpr bool is_same_raw_v = is_same_raw<T1, T2>::value;
 ```
 
+## is_floating_point: redux
+
+This is using alias template.
+
+```cpp
+template <typename T>
+using is_floating_point = std::bool_constant<
+        is_same_raw_v<float,       T>
+     || is_same_raw_v<double,      T>
+     || is_same_raw_v<long double, T>>;
+```
+
+## is_integral: redux
+
+```cpp
+template <typename T>
+using is_integral = std::bool_constant<
+        is_same_raw_v<bool,               T>
+     || is_same_raw_v<char,               T>
+     || is_same_raw_v<char8_t,            T>
+     || is_same_raw_v<char16_t,           T>
+     || is_same_raw_v<char32_t,           T>
+     || is_same_raw_v<wchar_t,            T>
+     || is_same_raw_v<signed char,        T>
+     || is_same_raw_v<short,              T>
+     || is_same_raw_v<int,                T>
+     || is_same_raw_v<long,               T>
+     || is_same_raw_v<long long,          T>
+     || is_same_raw_v<unsigned char,      T>
+     || is_same_raw_v<unsigned short,     T>
+     || is_same_raw_v<unsigned int,       T>
+     || is_same_raw_v<unsigned long,      T>
+     || is_same_raw_v<unsigned long long, T>>;
+```
+
+It might be implemented using parameter pack.
+
+`is_type_in_pack` is a meta-function, it takes a type and ti take a list of bunch of other types.
+Adn `is_type_in_pack` will biscally returned true if that type was anywhere in that list.
+
+```cpp
+template <typename TargetT, typename ...Ts>
+using is_type_in_pack = ...;
+
+template <typename T>
+using is_integral = is_type_inpack<remove_cv_t<T>,
+    bool,
+    char, char8_t, char16_t, char32_t, wchar_t,
+    signed char, unsigned char,
+    signed short, unsigned short,
+    signed int, unsigned int,
+    signed long, unsigned long,
+    signed long long, unsigned long long>;
+    
+```
+
+## is_array
+
+The definition of `is_array`.
+
+```cpp
+template <typename T>
+struct is_array : std::false_type {};
+
+// inbounded array
+template <typename T, std::size_t N>
+struct is_arrya <T[N]> : std::true_type {};
+
+// unbounded array
+template <typename T>
+struct is_array<T[]> : std::true_type {};
+```
+
+Some examples.
+
+```cpp
+static_assert(is_array,int[5]>);
+// T = int[5] - primary template matches
+// T = int, N = 5 - first specialization matches
+// no way to form T to match second sepcialization
+
+static_assert(is_array<int[]>);
+// T = int[] == primary template matches
+```
+
+## is_pointer
+
+```cpp
+namespace detail {
+// Primary template - most things are not pointers
+template <typename T>
+struct is_pointer_impl : std::false_type {};
+
+// When we have a pointer
+template <typename T>
+struct is_pointer_impl<T *> : std::true_type {};
+
+} // end of namespace detail
+
+// alias template 
+template <typename T>
+using is_pointer = detail::is_pointer_impl<remove_cv_t<T>>;
+```
+
+## is_union
+
+This meta-function is actually impossible to implement without support from the compiler. Both clang
+and gcc provide this particular compiler intrinsic to determine if a type is a union.
+
+```cpp
+template <typename T>
+using is_union = std::bool_constant<__is_union(T)>;
+```
+
+
+## is_class_or_union
+
+What do we know about unions and classes that is unique to those two types?
+
+* They can have members.
+* Devise a way to detect if a type can have a member.
+* How can you tell if a class has a member?
+* The syntax for a pointer-to-member is valid for any class, even without any members.
+
+Eg.
+
+`int*` is a valid pointer type, but does not have to point to anything. meta-programming is aimed to
+deal with types, not the data.
+
+* int Foo::* is a member pointer type, does not have to point to anything.
+
+```cpp
+// An empty struct, with no members of any kind
+struct Bar {};
+
+// BarIntObjectMemPtr is an alias for a type that is a pointer to a member of class Bar, where the
+// member is an int.
+using BarintObjectMemPtr = int Bar::*;
+
+// This, however, generates a hard compiler error
+usign LongIntObjectMemPtr = ing long::*;
+```
+
+# Funciton Overload Resolution
+
+```cpp
+namespace detail {
+std::true_type is_nullptr(std::nullptr_t);
+// ... it will match anything. But it is the least priority. It will only ever be used if nothing
+// else matches. It'll only be used if it's the only one that matches.
+std::false_type is_nullptr(...);
+
+} // end of namespace detail
+
+template <typename T>
+using is_null_pointer = decltype(detail::is_nullptr(std::devlval<T>()));
+```
+
+```cpp
+static_assert(not is_null_pointer<int>::value);
+// This only match the second one.
+static_assert(is_null_pointer<std::nullptr_t>::value);
+// This can match two versions of `is_nullptr`, but overload resolution will choose the first one, 
+// because the first one is the best match.
+```
+
+Another case.
+
+```cpp
+template <typename T>
+struct TypeIdentity { using type = T; };
+
+namespace detail {
+template <typename T>
+std::true_type isconst(TypeIdentity<T const>);
+
+template <typename T>
+std::false_type isconst(TypeIdentity<T>);
+} // end of namespace detail
+
+template <typename T>
+using is_const = decltype(detail::isconst(std::declval<TypeIdentity<T>>()));
+```
+
+This uses technique called `Tag Dispatch`. `Tag Dispatch` is where we are creating a type that is
+just being used as a tag.
+
+`TypeIdentity` takes no space, and it is very efficient to pass these guys around.
+
+
+# SFINAE (Substitution Failure Is Not An Error)
+
+```cpp
+template <typename T>
+std::true_type can_have_pointer_to_member(int T::*);
+
+template <typename T>
+std::false_type can_have_pointer_to_member(...);
+```
+
+## is_class
+
+Almost always implemented as compiler intrinsic. Because compiler is much faster dealing with
+intrinsics than dealing with even the simplest template stuff. Without the support of compiler, it
+is kind of impossible to distinguish between union and non-union class type.
+
+We have `is_union` (with help from the compiler)
+
+* The definition is:
+
+```cpp
+namespace detail {
+template <typename T>
+std::bool_constant<not std::is_union_v<T>>
+is_class_or_union(int T::*);
+
+// We only want to use the return type of `is_class_or_union` function. So we don't need to
+// create implementation for this function.
+template <typename T>
+std::false_type is_class_or_union(...);
+}
+
+template <typename T>
+using is_class = decltype(detail::is_class_or_union<T>(nullptr));
+```
+
+Implement `is_class` using `constexpr`.
+
+```cpp
+namespace detail {
+template <typename T> constexpr bool is_class_or_union(int T::*) {
+  return not std::is_union<T>::value;
+}
+
+template <typename T> constexpr bool is_class_or_union(...) {
+  return false;
+}
+} // end of namespace detail
+
+template <typename T>
+using is_class = std::bool_constant<detail::is_class_or_union<T>(nullptr)>;
+```
+
+```cpp
+template <typename T>
+using is_const = decltype(detail::isconst(std::declval<TypeIdentity<T>>()));
+```
+* **decltype** --- tells you to pretend that compiler will evaluate this expression, and give me the
+result the type that you would get from the evaluated expression.
+* **declval** --- is there so you can grab a reference to any type. It just gives you a reference
+  to something as if you had created one as if you had one. So it just declaration, it's there's no
+  implementation.
+
+## is_in_pack
+
+```cpp
+// Template declaration, with no definition
+template <typename TargetT, typename... Ts>
+struct IsInPack;
+
+// Base case --- no more elements
+template <typename TargetT>
+struct IsInPack<TargetT> : std::false_type {};
+
+// NOTES: is_in_pack uses partial specialization to match the two same types.
+// If the first one matches the target, we are done.
+template <typename TargetT, typename... Ts>
+struct IsInpack<TargetT, TargetT, Ts...> : std::true_type {};
+
+// Otherwise, check the remaining ones.
+template <typename TargetT, typename T, typename... Ts>
+struct IsInpack<TargetT, T, Ts...> : IsInPack<Target, Ts...> {};
+```
+
+Examples
+
+```cpp
+static_assert(IsInPack<int, double,char,int,float>::value);
+static_assert(not IsInPack<long, double,char,int,float>::value);
+```
+
+The version of using `is_base_of`.
+
+```cpp
+namespace detail {
+template <typename T>
+struct TypeIdentitiy { using type = T; };
+
+template <typename... Ts>
+struct IsInPackImpl : TypeIdentity<Ts>... {};
+
+tmeplate <typename TargetT, typename... Ts>
+using IsInpack = std::is_base_of<
+    TypeIdentity<TargetT>,
+    detail::IsInPackImpl<Ts...>>;
+} // end of namespace detail
+```
+
+Examples
+
+```cpp
+static_assert(IsInPack<int, double,char,int,float>::value);
+static_assert(not IsInPack<long, double,char,int,float>::value);
+```
+
+## is_base_of
+
+If Derived is derived from Base or if both are the same non-union class (in both cases
+cv-qualification), provides the member constant value equal to `true`. Otherwise value is `false`.
+
+The possible definition of `is_base_of` is as follows:
+
+```cpp
+namespace detail {
+template <typename B>
+std::true_type test_pre_ptr_convertible(const volatile B*);
+
+template <typename>
+std::false_type test_pre_ptr_convertible(const volatile void*);
+
+template <typename, typename>
+auto test_pre_is_base_of(...) -> std::true_type;
+
+template <typename B, typename D>
+auto test_pre_is_base_of(int) ->
+  decltype(test_pre_ptr_convertible<B>(static_cast<D*>(nullptr)));
+} // end of namespace detail
+
+template <typename Base, typename Derived>
+struct is_base_of :
+    std::integral_constant<
+        bool,
+        std::is_class<Base>::value && std::is_class<Derived>::value &&
+        decltype(details::test_pre_is_base_of<Base, Derived>(0))::value
+    > {};
+```
+
+
+
 
 # References
 
@@ -716,3 +1053,4 @@ constexpr bool is_same_raw_v = is_same_raw<T1, T2>::value;
 * [Generic programming in OO Languages](https://hrjiang.github.io/fopl/13_templates-generics.pdf)
 * [30 Core Guidelines for Writting Clean, Safe, and Fast Code](https://ptgmedia.pearsoncmg.com/images/9780137647842/samplepages/9780137647842_Sample.pdf)
 * [Reflective Metaprogramming in C++](https://2018.cppconf-piter.ru/talks/day-2/track-a/1.pdf)
+* [Tag Dispatching](https://blog.csdn.net/qmickecs/article/details/70574506)
