@@ -69,6 +69,8 @@ add_executable(cpp_weekly
 
         optimizations/small_string_optimization.cc
 
+        paradigms/lambda_expressions.cc
+
         pointer_like_classes/iterator_case_test.cc
         pointer_like_classes/shared_ptr_test.cc
 
