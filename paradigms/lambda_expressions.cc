@@ -15,6 +15,10 @@ public:
     os << w.name_ << '\n';
     return os;
   }
+
+  void test_capture() {
+    [name = std::ref(name_)] { std::cout << name.get() << '\n'; }();
+  }
 };
 
 // init capture --- generalized lambda capture --- since c++14
@@ -24,6 +28,9 @@ void test_init_capture(const std::string &name) {
   // init capture
   [pw = std::move(pw_outer)] { std::cout << *pw.get(); }();
   [pw = std::make_unique<Widget>(name)] { std::cout << *pw.get(); }();
+
+  auto pw = std::make_unique<Widget>("Inner Capture");
+  pw->test_capture();
 }
 
 } // namespace
@@ -35,6 +42,7 @@ TEST(lambda_expression, init_capture_test) {
   test_init_capture("Name");
   oss << "Name\n";
   oss << "Name\n";
+  oss << "Inner Capture\n";
 
   auto act_output = testing::internal::GetCapturedStdout();
   debug_msg(oss, act_output);
