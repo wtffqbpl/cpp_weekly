@@ -60,6 +60,7 @@ add_executable(cpp_weekly
         misc/optional_test.cc
         misc/random_test.cc
         misc/shared_mutex_test.cc
+        misc/smallest_value_without_operator.cc
         misc/std_copy_test.cc
         misc/typeinfo_test.cc
         misc/reference_cnt_demo/reference_cnt.cc
