@@ -4,30 +4,28 @@
 // The basic recursion version.
 namespace {
 
-template <typename... Ts>
-void print(Ts... args) { (std::cout << ... << args) << std::endl; }
+template <typename... Ts> void print(Ts... args) {
+  (std::cout << ... << args) << std::endl;
+}
 
-template <size_t N, size_t I>
-struct ForEach {
+template <size_t N, size_t I> struct ForEach {
 
   static void item() {
     std::cout << I << std::endl;
 
     // recursive upwards
     if constexpr (I + 1 < N)
-      ForEach<N, I+1>::item();
+      ForEach<N, I + 1>::item();
   }
 };
 
-#if 0
-template <size_t N, size_t I = 0, typename... Ts>
+template <size_t N, size_t I = 0, size_t Step = 1, typename... Ts>
 void for_loop_compile_time(Ts... args) {
   print(args...);
 
-  if constexpr (I + 1 < N)
-    for_loop_compile_time<N, I+1, Ts...>(args...);
+  if constexpr (I + Step < N)
+    for_loop_compile_time<N, I + Step, Step, Ts...>(args...);
 }
-#endif
 
 } // namespace
 
@@ -41,14 +39,6 @@ TEST(for_loop_in_compile_time, basic_test) {
   auto act_output = testing::internal::GetCapturedStdout();
   debug_msg(oss, act_output);
   EXPECT_TRUE(oss.str() == act_output);
-}
-
-template <size_t N, size_t I = 0, typename... Ts>
-void for_loop_compile_time(Ts... args) {
-  print(args...);
-
-  if constexpr (I + 1 < N)
-    for_loop_compile_time<N, I+1, Ts...>(args...);
 }
 
 TEST(for_loop_in_compile_time, function_loop_test) {
