@@ -100,6 +100,7 @@ add_executable(cpp_weekly
         template/CTAD_class_template_argument_deduction.cc
         template/enable_if_test.cc
         template/function_template_test.cc
+        template/for_loop_in_compile_time.cc
         template/partial_specialization_test.cc
         template/ref_cref_test.cc
         template/sfinae_test.cc
