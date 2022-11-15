@@ -6,6 +6,7 @@
 ![workflow](https://github.com/wtffqbpl/cpp_weekly/actions/workflows/cmake.yml/badge.svg)
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fwtffqbpl%2Fcpp_weekly.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fwtffqbpl%2Fcpp_weekly?ref=badge_shield)
 
+[![Star History Chart](https://api.star-history.com/svg?repos=wtffqbpl/cpp_weekly&type=Date)](https://star-history.com/#wtffqbpl/cpp_weekly&Date)
 
 ## License
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fwtffqbpl%2Fcpp_weekly.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fwtffqbpl%2Fcpp_weekly?ref=badge_large)
