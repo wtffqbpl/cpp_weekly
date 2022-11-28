@@ -1,3 +1,4 @@
+#include <array>
 #include <complex>
 #include <gtest/gtest.h>
 #include <unordered_set>

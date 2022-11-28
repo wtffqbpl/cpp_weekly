@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <array>
 
 template <typename T, std::size_t Maxsize> class Stack_3_1 {
 private:

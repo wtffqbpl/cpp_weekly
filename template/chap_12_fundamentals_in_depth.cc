@@ -583,7 +583,7 @@ void f(int) {}
 template <typename T> void temp_func() {}
 
 struct XNonType {
-  static bool b;
+  static inline bool b;
   int n;
 
   constexpr operator int() const { return 42; }
@@ -650,3 +650,27 @@ class Rel {};
 // Rel<int, double, std::list> rel; //
 
 } // namespace
+
+namespace {
+
+template <typename... Types>
+void print(Types... values) {
+  (std::cout << ... << values) << std::endl;
+}
+} // namespace
+
+TEST(function_parameter_pack, basic_test) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  std::string welcome("Welcome to ");
+  // calls print<std::string, char const *, int, char>
+  print(welcome, "C++ ", 2011, '\n');
+  oss << "Welcome to C++ 2011\n\n";
+
+  std::string act_output = testing::internal::GetCapturedStdout();
+
+  debug_msg(oss, act_output);
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
