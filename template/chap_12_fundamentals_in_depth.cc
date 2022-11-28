@@ -674,3 +674,167 @@ TEST(function_parameter_pack, basic_test) {
 
   EXPECT_TRUE(oss.str() == act_output);
 }
+
+namespace {
+
+// The following function copies all of its arguments before forwarding them on
+// to the function object f.
+template <typename F, typename... Types>
+void forwardCopy(F f, Types const &...values) {
+  f(Types(values)...);
+}
+
+template <typename... Types> void g(Types... args) {}
+
+// A nested pack expansion.
+template <typename... OuterTypes> class Nested {
+  template <typename... InnerTypes> void f(InnerTypes const &...innerValues) {
+    g(OuterTypes(InnerTypes(innerValues)...)...);
+  }
+};
+
+// The following example shows how to expand nested parameter packs.
+// Multiple and nested pack expansions are a powerful tool.
+template <typename O1, typename O2> class Nested_impl {
+  template <typename I1, typename I2, typename I3>
+  void f(I1 const &iv1, I2 const &iv2, I3 const &iv3) {
+    g(O1(I1(iv1), I2(iv2), I3(iv3)), O2(I1(iv1), I2(iv2), I3(iv3)));
+  }
+};
+
+// Fold Expressions
+
+// This is a recursive version.
+bool and_all() { return true; }
+template <typename T> bool and_all(T cond) { return cond; }
+template <typename T, typename... Ts> bool and_all(T cond, Ts... conds) {
+  return cond && and_all(conds...);
+}
+
+template <typename T> T trait() {}
+
+// Before we use fold expression, the original definition is as follows.
+template <typename... T> bool g() { return and_all(trait<T>()...); }
+// With fold expression, the function `bool g()` would be re-written to:
+template <typename... T> bool g_with_fold_expression() {
+  return (trait<T>() && ... && true);
+}
+
+} // namespace
+
+namespace {
+
+template <typename T> class Pal;
+
+class CFriendTemplate {
+  friend class Pal<CFriendTemplate>; // Pal<C> is the friend class of C
+  template <typename T>
+  friend class Pal2; // all initialization of Pal2 classes
+                     // are friend class of C
+private:
+  void print() const { std::cout << "class CFriendTemplate" << std::endl; }
+};
+
+template <typename T> class CFriendTemplate2 {
+  friend class Pal<T>; // Pal<T> is the friend class of C2
+  // All initialization of Pal2 classes are friend class of C2.
+  // Note: the template parameter X must not be the same type of T (the
+  // notation) If the X and T are the same notation, then Pal2 must have the
+  // same template parameter with C2 class.
+  template <typename X> friend class Pal2;
+  // The ordinary friend class.
+  friend class Pal3;
+  // A template parameter is the friend class of C2.
+  // This is valid for any type T but is ignored if T is not actually a
+  // class type. This is introduced since C++11.
+  friend T;
+
+private:
+  void print() const { std::cout << "class C2" << std::endl; }
+};
+
+template <typename T> class Pal {
+  CFriendTemplate myC;
+  CFriendTemplate2<T> myC2;
+
+public:
+  void printC() const {
+    std::cout << "this is class Pal: ";
+    myC.print();
+  }
+
+  void printC2() const {
+    std::cout << "this is class Pal : ";
+    myC2.print();
+  }
+};
+
+template <typename T> class Pal2 {
+  CFriendTemplate myC;
+  CFriendTemplate2<double> myC2;
+
+public:
+  void printC() const {
+    std::cout << "This is class Pal2: ";
+    myC.print();
+  }
+
+  void printC2() const {
+    std::cout << "This is class Pal2: ";
+    myC2.print();
+  }
+};
+
+class Pal3 {
+  CFriendTemplate2<double> myC2;
+
+public:
+  void printC2() const {
+    std::cout << "This is class Pal3: ";
+    myC2.print();
+  }
+};
+
+class Pal4 {
+  CFriendTemplate2<Pal4> myC2;
+
+public:
+  void printC2() const {
+    std::cout << "This is class Pal4: ";
+    myC2.print();
+  }
+};
+
+} // namespace
+
+TEST(friend_template, basic_test) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  Pal<CFriendTemplate> pc{};
+  pc.printC();
+  oss << "this is class Pal: class CFriendTemplate\n";
+
+  Pal2<int> pi2{};
+  pi2.printC();
+  oss << "This is class Pal2: class CFriendTemplate\n";
+
+  Pal<int> pi{};
+  pi.printC2();
+  oss << "this is class Pal : class C2\n";
+
+  pi2.printC2();
+  oss << "This is class Pal2: class C2\n";
+
+  Pal3 p3{};
+  p3.printC2();
+  oss << "This is class Pal3: class C2\n";
+
+  Pal4 p4{};
+  p4.printC2();
+  oss << "This is class Pal4: class C2\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+  debug_msg(oss, act_output);
+  EXPECT_TRUE(oss.str() == act_output);
+}
