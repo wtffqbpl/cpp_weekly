@@ -1,6 +1,7 @@
 #include "my_timer.h"
-#include <gtest/gtest.h>
 #include <future>
+#include <gtest/gtest.h>
+#include <iostream>
 #include <random>
 
 static std::set<int> make_sorted_random(const size_t num_elems) {

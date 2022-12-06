@@ -73,6 +73,13 @@ TEST(type_traits_test, is_base_of_test) {
 }
 
 namespace {
+// Possible implementation:
+// template <typename T, typename U>
+// struct is_same : std::false_type {};
+// template <typename T>
+// struct is_same<T, T> : std::true_type {};
+// template <class T, class U>
+// inline constexpr bool is_same_v = is_same<T, U>:: value;
 
 void print_separator() { std::cout << "-----\n"; }
 
@@ -90,7 +97,7 @@ void is_same_test() {
   // compare the types of a couple variables.
   long double num1 = 1.0;
   long double num2 = 2.0;
-  std::cout << std::is_same_v< decltype(num1), decltype(num2)> << '\n'; // true
+  std::cout << std::is_same_v<decltype(num1), decltype(num2)> << '\n'; // true
   print_separator();
 
   // 'float' is never an integral type.
@@ -98,21 +105,21 @@ void is_same_test() {
   print_separator();
 
   // 'int' is implicitly 'signed'
-  std::cout << std::is_same_v<int, int> << ' ';           // true
-  std::cout << std::is_same_v<int, unsigned int> << ' ';  // false;
-  std::cout << std::is_same_v<int, signed int> << '\n';   // true
+  std::cout << std::is_same_v<int, int> << ' ';          // true
+  std::cout << std::is_same_v<int, unsigned int> << ' '; // false;
+  std::cout << std::is_same_v<int, signed int> << '\n';  // true
   print_separator();
 
   // unlike other types, 'char' is neither 'unsigned' nor 'signed'.
-  std::cout << std::is_same_v<char, char> << ' ';           // true
-  std::cout << std::is_same_v<char, unsigned char> << ' ';  // false
-  std::cout << std::is_same_v<char, signed char> << '\n';   // false
+  std::cout << std::is_same_v<char, char> << ' ';          // true
+  std::cout << std::is_same_v<char, unsigned char> << ' '; // false
+  std::cout << std::is_same_v<char, signed char> << '\n';  // false
 
   // const-qualified type T is not same as non-const T
   static_assert(not std::is_same_v<const int, int>);
 }
 
-}
+} // namespace
 
 TEST(is_same_test, basic_test) {
   std::stringstream oss;
