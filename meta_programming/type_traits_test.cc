@@ -71,3 +71,65 @@ TEST(type_traits_test, is_base_of_test) {
   debug_msg(oss, act_output);
   EXPECT_TRUE(oss.str() == act_output);
 }
+
+namespace {
+
+void print_separator() { std::cout << "-----\n"; }
+
+void is_same_test() {
+  std::cout << std::boolalpha;
+  // some implementation-defined facts.
+
+  // usually true if 'int' is 32 bit.
+  std::cout << std::is_same_v<int, std::int32_t> << ' '; // ~ true
+  // possibly true if ILP64 data model is used.
+  std::cout << std::is_same_v<int, std::int64_t> << "\n"; // ~ false
+
+  print_separator();
+
+  // compare the types of a couple variables.
+  long double num1 = 1.0;
+  long double num2 = 2.0;
+  std::cout << std::is_same_v< decltype(num1), decltype(num2)> << '\n'; // true
+  print_separator();
+
+  // 'float' is never an integral type.
+  std::cout << std::is_same_v<float, std::int32_t> << '\n'; // false
+  print_separator();
+
+  // 'int' is implicitly 'signed'
+  std::cout << std::is_same_v<int, int> << ' ';           // true
+  std::cout << std::is_same_v<int, unsigned int> << ' ';  // false;
+  std::cout << std::is_same_v<int, signed int> << '\n';   // true
+  print_separator();
+
+  // unlike other types, 'char' is neither 'unsigned' nor 'signed'.
+  std::cout << std::is_same_v<char, char> << ' ';           // true
+  std::cout << std::is_same_v<char, unsigned char> << ' ';  // false
+  std::cout << std::is_same_v<char, signed char> << '\n';   // false
+
+  // const-qualified type T is not same as non-const T
+  static_assert(not std::is_same_v<const int, int>);
+}
+
+}
+
+TEST(is_same_test, basic_test) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  is_same_test();
+  oss << "true false\n"
+         "-----\n"
+         "true\n"
+         "-----\n"
+         "false\n"
+         "-----\n"
+         "true false true\n"
+         "-----\n"
+         "true false false\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+  debug_msg(oss, act_output);
+  EXPECT_TRUE(oss.str() == act_output);
+}
