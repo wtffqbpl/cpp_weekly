@@ -86,7 +86,7 @@ template <int SZ> struct Helper<SZ, false> {};
 // implementation if SZ is a prime number:
 template <int SZ> struct Helper<SZ, true> {};
 
-template <typename T, std::size_t SZ> long foo(std::array<T, SZ> const &coll) {
+template <typename T, std::size_t SZ> void foo(std::array<T, SZ> const &coll) {
   // implementation depends on whether array has prime number than size.
   Helper<SZ> h;
 }

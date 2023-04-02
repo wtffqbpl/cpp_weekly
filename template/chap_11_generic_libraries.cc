@@ -56,7 +56,7 @@ typedef int (*fp2)(char *);
 struct Caller {
   operator fp1() { return f1; }
   operator fp2() { return f2; }
-  int operator()(char *) {
+  int operator()(const std::string &) {
     std::cout << "[int operator()(int)] called" << std::endl;
     return true;
   }

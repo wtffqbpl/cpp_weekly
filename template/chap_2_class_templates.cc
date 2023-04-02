@@ -16,14 +16,21 @@ public:
   void push(T const &Elem); // push element
   void pop();               // pop element
   T const &top() const;     // return top element.
-  bool empty() const {      // return whether the stack is empty.
+  [[nodiscard]] bool empty() const { // return whether the stack is empty.
     return Elems_.empty();
   }
+  [[nodiscard]] size_t size() const { return Elems_.size(); }
+
+  using StackIt = typename std::vector<T>::reverse_iterator;
+  [[nodiscard]] StackIt begin() { return Elems_.rbegin(); }
+  [[nodiscard]] StackIt end() { return Elems_.rend(); }
 
   // io 如果模版涉及到IO，那么需要定义一个 friend operator<< 来实现IO
   template <typename U>
-  friend std::ostream &operator<<(std::ostream &, Stack<U> const &) {
-    // TODO io declaration examples.
+  friend std::ostream &operator<<(std::ostream &os, Stack<U> const &stack) {
+    for (auto it = stack.begin(); it != stack.end(); ++it)
+      os << *it << "\n";
+    return os;
   }
 };
 
