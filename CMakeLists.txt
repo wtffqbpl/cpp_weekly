@@ -28,6 +28,7 @@ add_executable(cpp_weekly
         algorithms/partition_test.cc
         algorithms/transform_test.cc
         algorithms/std_generate_test.cc
+        algorithms/scan.cc
 
         concurrent/create_thread.cc
         concurrent/producer_consumer.cc
