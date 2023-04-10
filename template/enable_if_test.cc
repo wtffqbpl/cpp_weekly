@@ -91,7 +91,7 @@ template <typename T, std::enable_if_t<std::is_floating_point_v<T>, bool> = true
 
 // std::enable_if or std::enable_if_t could be used for restricting or enabling
 // the types used for template specialization via return type or function
-// parameters. Understanding those is almost equivalent as understand enabling
+// parameters. Understanding those are almost equivalent as understand enabling
 // template specialization via template parameters.
 
 // References
