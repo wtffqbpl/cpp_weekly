@@ -36,13 +36,13 @@ template <typename KeyT> struct Item {
 
   Item(KeyT key_, KeyT value_) : key(key_), value(value_) {}
   Item(const Item &item) {
-    key = item.key;
-    value = item.value;
+    this->key = item.key;
+    this->value = item.value;
   }
 
   bool operator<(const Item &item) const { return key < item.key; }
   bool operator==(const Item &item) const {
-    return key == item.key && value == item.value;
+    return this->key == item.key && this->value == item.value;
   }
 
   Item &operator=(const Item &item) {
