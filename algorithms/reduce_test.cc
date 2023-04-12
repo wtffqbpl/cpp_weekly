@@ -26,14 +26,15 @@ TEST(reduce_test, reduce_basic_test) {
     return result;
   };
 
-  const std::vector<double> v(100'000'007, 0.1);
+  const std::vector<long long> v(100'000'007, 1ll);
 
   auto accumulate_result = eval([&v] {
-    return std::pair{"std::accumulate (double)",
-                     std::accumulate(v.cbegin(), v.cend(), 0.0)};
+    return std::pair{"std::accumulate (long long)",
+                     std::accumulate(v.cbegin(), v.cend(), 0ll)};
   });
   auto reduce_result = eval([&v] {
-    return std::pair{"std::reduce (double)", std::reduce(v.cbegin(), v.cend())};
+    return std::pair{"std::reduce (long long)",
+                     std::reduce(v.cbegin(), v.cend())};
   });
 
   EXPECT_EQ(accumulate_result, reduce_result);

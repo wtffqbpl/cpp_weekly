@@ -119,8 +119,16 @@ TEST(pod, basic_test) {
   std::stringstream oss;
 
   testing::internal::CaptureStdout();
+#if 0
+  // Note: std::is_pod is deprecated in C++20
   std::cout << "simple_point is pod = " << std::boolalpha
             << std::is_pod<simple_point>::value << std::endl;
+#else
+  std::cout << "simple_point is pod = " << std::boolalpha
+            << (std::is_trivial_v<simple_point> &&
+                std::is_standard_layout_v<simple_point>)
+            << std::endl;
+#endif
 
   oss << "simple_point is pod = true\n";
 

@@ -31,7 +31,9 @@ TEST(std_future_test, basic_test) {
 }
 
 static int add(int a, int b) {
+#if defined(__clang__) && defined(__APPLE__)
   std::cout << "work thread = " << std::this_thread::get_id() << std::endl;
+#endif
   std::this_thread::sleep_for(std::chrono::milliseconds(3000));
   return a + b;
 }
@@ -43,7 +45,9 @@ static int add(int a, int b) {
  */
 TEST(std_future_test, deferred_task_test) {
   Timer("future deferred task test.");
+#if defined(__clang__) && defined(__APPLE__)
   std::cout << "main thread = " << std::this_thread::get_id() << std::endl;
+#endif
   std::future<int> result = std::async(std::launch::deferred, add, 2, 3);
   std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
@@ -56,7 +60,9 @@ TEST(std_future_test, deferred_task_test) {
  */
 TEST(std_future_test, async_task_test) {
   Timer("future deferred task test.");
+#if defined(__clang__) && defined(__APPLE__)
   std::cout << "main thread = " << std::this_thread::get_id() << std::endl;
+#endif
   std::future<int> result = std::async(std::launch::async, add, 2, 3);
   std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 

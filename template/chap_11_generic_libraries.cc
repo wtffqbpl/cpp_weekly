@@ -71,8 +71,9 @@ TEST(chap_11_generic_libraries, test) {
   Caller call;
 
   int if1 = call(1); // calls f1 via pointer returned from conversion function
-  int if2 = call("this is caller f2"); // calls f2 via pointer returned from
-                                       // conversion function
+  int if2 =
+      call(std::string("this is caller f2")); // calls f2 via pointer returned
+                                              // from conversion function
 
   EXPECT_EQ(if1, if2);
 }

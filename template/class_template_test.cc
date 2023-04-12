@@ -4,16 +4,16 @@
 template <typename T>
 class complex {
 public:
-  complex(T r = 0, T i = 0) : re(r), im(i) {}
+  explicit complex(T r = 0, T i = 0) : re(r), im(i) {}
 
-  complex &operator+=(const complex &);
-  T real() const { return re; }
-  T imag() const { return im; }
+  complex &operator+=(const complex &other) {
+    return complex{re + other.real(), im + other.imag()};
+  };
+  [[nodiscard]] T real() const { return re; }
+  [[nodiscard]] T imag() const { return im; }
 
 private:
   T re, im;
-
-  friend complex &__doapl(complex *, const complex &);
 };
 
 TEST(ClassTemplate, Test1) {
