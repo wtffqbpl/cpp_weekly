@@ -38,6 +38,8 @@ add_executable(cpp_weekly
 
         conversion_function/conversion_function.cc
 
+        cpp_challenges/chap1_math_problems.cc
+
         class/class_test.cc
         class/inheritance_test.cc
 
