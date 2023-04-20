@@ -838,3 +838,112 @@ TEST(friend_template, basic_test) {
   debug_msg(oss, act_output);
   EXPECT_TRUE(oss.str() == act_output);
 }
+
+namespace template_friend {
+// The basic idea of friend declarations is a simple one: Identify classes of
+// functions that have a privileged connection with the class in which the
+// friend declaration appears. Matters are somewhat complicated, however, by two
+// facts:
+// 1. A friend declaration may be the only declaration of an entity.
+// 2. A friend function declaration can be a definition.
+
+// C++11 also added syntax to make a template parameter a friend:
+template <typename T> class WrapFriendDefinition {
+  // This is valid for any type T but is ignored if T is not actually a class
+  // type.
+  friend T;
+};
+
+// 12.5.2 Friend function of class templates
+// An instance of a function template can be make a friend by making sure the
+// name of the friend function is followed by angle brackets. The angle brackets
+// can contain the template arguments, but if the arguments can be deduced, the
+// angle brackets can be left empty:
+
+template <typename T1, typename T2> void combine(T1, T2) {
+  std::cout << (std::is_same_v<T1, T2> ? "SAME" : "DIFF") << std::endl;
+}
+
+class Mixer {
+  friend void combine<>(int &, int &); // OK: T1 = int&, T2 = int&
+
+  friend void combine<int, int>(int, int);
+
+  friend void combine<char>(char, int); // OK: T1 = char, T2 = int
+
+  // friend void combine<>(long, long) { /* ... */ }: ERROR: definition is not
+  // allowed.
+};
+
+template <> void combine<int, int>(int, int) {}
+template <> void combine<char>(char, int) {}
+template <> void combine(int &, int &) {}
+
+// 1. If the name isn't qualified, it never refers to a template instance.
+// 2. If the name is qualified, the name must refer to a previously declared
+//    function or function template.
+
+void multiply(void *) {}
+// ordinary function
+
+template <typename T> void multiply(T) {} // function template
+
+class Comrades {
+  friend void multiply(int) {} // defines a new function ::multiply(int)
+
+  // refers to the ordinary function above, not to the multiply<void*> instance
+  friend void template_friend::multiply(void *);
+
+  // qualified names can also have angle brackets, but a template must be
+  // visible
+  friend void template_friend::multiply<double *>(double *);
+};
+
+template <> void multiply<double *>(double *) {}
+
+// Friend function in class templates
+// The template parameters may participate in identifying the function that is
+// to be a friend.
+template <typename T> class Node {
+  Node<T> *allocate() {}
+};
+
+template <typename T> class List { friend Node<T> *Node<T>::allocate(); };
+
+// A friend function may also be defined within a class template, in which case
+// it is only instantiated when it is actually used. This typically requires the
+// friend function to use the class template itself in the type of the friend
+// function, which makes it easier to express functions on the class template
+// that can be called as if they were visible in namespace scope:
+
+template <typename T> class Creator {
+  friend void feed(Creator<T>) {
+  } // every T instantiates a different function ::feed()
+};
+
+void test_friend_function_in_template_class() {
+  Creator<void> one;
+  feed(one); // instantiates ::feed(Creator<void>)
+  Creator<double> two;
+  feed(two); // instantiates ::feed(Creator<double>)
+}
+
+// 12.5.3 Friend Templates
+
+template <typename T> class Task {};
+
+template <typename T> class Schedule {
+  void dispatch(Task<T> *) {}
+};
+
+class Manager {
+  // Friend template
+  template <typename T> friend class Task;
+
+  template <typename T> friend void Schedule<T>::dispatch(Task<T> *);
+
+  template <typename T> friend int ticket() { return ++Manager::counter; }
+
+  static inline int counter = 0;
+};
+}
