@@ -89,6 +89,10 @@ add_executable(cpp_weekly
 
         regrex/match_search_test.cc
 
+        standard_libraries/iterator_test.cc
+        standard_libraries/random_test.cc
+        standard_libraries/numeric_test.cc
+
         strings/string_test.cc
         strings/string_view_test.cc
 
@@ -111,7 +115,9 @@ add_executable(cpp_weekly
         template/partial_specialization_test.cc
         template/ref_cref_test.cc
         template/sfinae_test.cc
+        template/template_recursion_test.cc
         template/using_template_test.cc
+        template/design_uniform_function_interfaces.cc
 
         topics/deep_vs_shallow/deep_vs_shallow_main.cc
         topics/memory_block_management/memory_block_management_main.cc
