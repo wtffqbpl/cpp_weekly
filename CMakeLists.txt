@@ -120,6 +120,7 @@ add_executable(cpp_weekly
         template/using_template_test.cc
         template/design_uniform_function_interfaces.cc
         template/template_design_examples.cc
+        template/crtp_test.cc
 
         topics/deep_vs_shallow/deep_vs_shallow_main.cc
         topics/memory_block_management/memory_block_management_main.cc

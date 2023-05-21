@@ -319,3 +319,17 @@ private:
 };
 
 } // namespace expression_template
+
+namespace meta_tuning {
+template <typename T, int Size> struct FSizeVector {
+  static constexpr int my_size = Size;
+  T data[Size];
+
+  template <typename Vector> auto &operator=(const auto &that) {
+    for (int i = 0; i < my_size; ++i)
+      data[i] = that[i];
+    return *this;
+  }
+};
+
+} // namespace meta_tuning
