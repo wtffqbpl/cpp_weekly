@@ -200,3 +200,122 @@ inline auto minimum_my_2(const T &t, const P &...p) {
 }
 
 } // namespace variadic_template_type_deduction
+
+namespace expression_template {
+
+template <typename T> class VectorSum;
+
+template <typename T> class VectorSum3;
+
+template <typename T> class Vector {
+public:
+  explicit Vector(int size) : my_size(size), data(new T[my_size]) {}
+
+  const T &operator[](int i) const {
+    check_index(i);
+    return data[i];
+  }
+
+  // ...
+
+  void check_index(int i) {}
+  void check_size(int size) {}
+
+  template <typename Src> Vector &operator=(const Src &that) {
+    check_size(size(that));
+    for (int i = 0; i < my_size; ++i)
+      data[i] = that[i];
+    return *this;
+  }
+
+private:
+  friend Vector<T> operator+(const Vector<T> &x, const Vector<T> &y);
+
+private:
+  size_t my_size;
+  T *data;
+};
+
+template <typename T>
+inline Vector<T> operator+(const Vector<T> &x, const Vector<T> &y) {
+  x.check_index(size(y));
+  Vector<T> sum(size(x));
+
+  for (int i = 0; i < size(x); ++i)
+    sum[i] = x[i] + y[i];
+
+  return sum;
+}
+
+// More efficient add3 implementation:
+template <typename T>
+void inline add3(const Vector<T> &x, const Vector<T> &y, const Vector<T> &z,
+                 Vector<T> &sum) {
+  // RVO manually.
+  x.check_index(size(y));
+  x.check_index(size(z));
+  x.check_index(size(sum));
+
+  for (int i = 0; i < size(x); ++i)
+    sum[i] = x[i] + y[i] + z[i];
+}
+
+// Expression template: builds structures representing a computation at compile
+// time, where expressions are evaluated ony as needed to produce efficient for
+// the entire computation.
+
+template <typename T> class VectorSum {
+public:
+  VectorSum(const Vector<T> &v1, const Vector<T> &v2) : v1(v1), v2(v2) {}
+
+  friend int size(const VectorSum &x) { return size(x.v1); }
+  // 这个类中最有趣的部分是中括号操作符:
+  // 当访问第i个条目的时候，才会计算所有操作数的第i项 之和。
+  T operator[](int i) const { return v1[i] + v2[i]; }
+
+  friend VectorSum3<T> inline operator+(const VectorSum<T> &x,
+                                        const Vector<T> &y);
+
+private:
+  const Vector<T> &v1, &v2;
+};
+
+template <typename T>
+VectorSum<T> operator+(const Vector<T> &x, const Vector<T> &y) {
+  return {x, y};
+}
+
+template <typename T> class VectorSum3 {
+public:
+  VectorSum3(const Vector<T> &v1_, const Vector<T> &v2_, const Vector<T> &v3_)
+      : v1(v1_), v2(v2_), v3(v3_) {}
+
+  T operator[](int i) const { return this->v1[i] + this->v2[i] + this->v3[i]; }
+
+private:
+  const Vector<T> &v1;
+  const Vector<T> &v2;
+  const Vector<T> &v3;
+};
+
+template <typename T>
+VectorSum3<T> inline operator+(const VectorSum<T> &x, const Vector<T> &y) {
+  return {x.v1, x.v2, y};
+}
+
+template <typename V1, typename V2> struct VectorSumGeneric {
+  VectorSumGeneric(const V1 &v1, const V2 &v2) : v1(v1), v2(v2) {}
+
+  using value_type =
+      std::common_type_t<typename V1::value_type, typename V2::value_type>;
+
+  value_type operator[](int i) const { return v1[i] + v2[i]; }
+  // or (since C++14), compiler will deduce this return type.
+  // decltype(auto) operator[](int i) const { return v1[i] + v2[i]; }
+
+private:
+  const V1 &v1;
+  const V2 &v2;
+};
+
+} // namespace expression_template
