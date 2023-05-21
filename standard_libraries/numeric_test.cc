@@ -83,3 +83,5 @@ TEST(adjacent_difference, basic_test) {
 
   EXPECT_TRUE(oss.str() == output);
 }
+
+#include <iterator>

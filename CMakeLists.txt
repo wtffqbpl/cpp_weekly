@@ -63,6 +63,7 @@ add_executable(cpp_weekly
         misc/constexpr_test.cc
         misc/initializer_list_test.cc
         misc/new_delete_test.cc
+        misc/noexcept_test.cc
         misc/optional_test.cc
         misc/placeholders_test.cc
         misc/random_test.cc
