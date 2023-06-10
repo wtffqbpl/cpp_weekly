@@ -11,11 +11,23 @@ FetchContent_Declare(
         googletest
         GIT_REPOSITORY https://github.com/google/googletest.git
         GIT_TAG release-1.12.1
+        GIT_SHALLOW TRUE
 )
 
 # For Windows: Prevent overriding the parent project's compiler/linker settings.
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
+
+# Boost-related
+set(BOOST_INCLUDE_LIBRARIES thread filesystem system program_options)
+set(BOOST_ENABLE_CMAKE ON)
+FetchContent_Declare(
+        Boost
+        GIT_REPOSITORY https://github.com/boostorg/boost.git
+        GIT_TAG boost-1.82.0
+        GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(Boost)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "-std=c++2a")
@@ -32,6 +44,8 @@ add_executable(cpp_weekly
         algorithms/std_generate_test.cc
         algorithms/scan.cc
         algorithms/reduce_test.cc
+
+        boost_related/reflection_test.cc
 
         concurrent/create_thread.cc
         concurrent/producer_consumer.cc
@@ -139,6 +153,7 @@ include_directories(include
 target_link_libraries(
         cpp_weekly
         GTest::gtest_main
+        Boost::program_options
 )
 
 include(GoogleTest)

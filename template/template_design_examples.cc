@@ -332,8 +332,7 @@ template <typename T, int Size> struct FSizeVector {
   }
 };
 
-template <int Rows, int Cols>
-struct fsize_mat_vec_mult_cm {
+template <int Rows, int Cols> struct fsize_mat_vec_mult_cm {
   template <typename Matrix, typename VecIn, typename VecOut>
   void operator()(const Matrix &A, const VecIn &v_in, VecOut &v_out) {
     fsize_mat_vec_mult_cm<Rows - 1, Cols>()(A, v_in, v_out);
@@ -342,8 +341,7 @@ struct fsize_mat_vec_mult_cm {
 };
 
 // Specialize for Row = 0
-template <int Cols>
-struct fsize_mat_vec_mult_cm<0, Cols> {
+template <int Cols> struct fsize_mat_vec_mult_cm<0, Cols> {
   template <typename Matrix, typename VecIn, typename VecOut>
   void operator()(const Matrix &A, const VecIn &v_in, VecOut &v_out) {
     fsize_mat_vec_mult_cm<Matrix::my_rows - 1, Cols - 1>()(A, v_in, v_out);
@@ -351,8 +349,7 @@ struct fsize_mat_vec_mult_cm<0, Cols> {
   }
 };
 
-template <int Rows>
-struct fsize_mat_vec_mult_cm<Rows, 0> {
+template <int Rows> struct fsize_mat_vec_mult_cm<Rows, 0> {
   template <typename Matrix, typename VecIn, typename VecOut>
   void operator()(const Matrix &A, const VecIn &v_in, VecOut &v_out) {
     fsize_mat_vec_mult_cm<Rows - 1, 0>()(A, v_in, v_out);
@@ -360,7 +357,6 @@ struct fsize_mat_vec_mult_cm<Rows, 0> {
   }
 };
 
-template <>
-struct fsize_mat_vec_mult_cm<0, 0> {};
+template <> struct fsize_mat_vec_mult_cm<0, 0> {};
 
 } // namespace meta_tuning
