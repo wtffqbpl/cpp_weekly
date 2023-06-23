@@ -44,6 +44,7 @@ add_executable(cpp_weekly
         algorithms/std_generate_test.cc
         algorithms/scan.cc
         algorithms/reduce_test.cc
+        algorithms/set_operations_test.cc
 
         boost_related/reflection_test.cc
 

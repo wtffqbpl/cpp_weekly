@@ -229,7 +229,8 @@ public:
   }
 
 private:
-  friend Vector<T> operator+(const Vector<T> &x, const Vector<T> &y);
+  template <typename U>
+  friend Vector<U> operator+(const Vector<U> &x, const Vector<U> &y);
 
 private:
   size_t my_size;
