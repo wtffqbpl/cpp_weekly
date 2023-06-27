@@ -33,3 +33,24 @@ TEST(inline_namespace_test, test1) {
 
   EXPECT_TRUE(oss.str() == act_output);
 }
+
+namespace A::B::C {
+void foo() { std::cout << "A::B::C::foo()" << std::endl; }
+} // namespace A::B::C
+
+TEST(inline_namespace_test, test2) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  A::B::C::foo();
+
+  oss << "A::B::C::foo()\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
