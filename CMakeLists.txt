@@ -77,6 +77,7 @@ add_executable(cpp_weekly
         misc/class_related_hash_function.cc
         misc/constexpr_test.cc
         misc/initializer_list_test.cc
+        misc/inline_namespace_test.cc
         misc/new_delete_test.cc
         misc/noexcept_test.cc
         misc/optional_test.cc
