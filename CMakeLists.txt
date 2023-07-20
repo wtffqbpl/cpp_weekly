@@ -73,6 +73,7 @@ add_executable(cpp_weekly
 
         meta_programming/limits_test.cc
         meta_programming/type_traits_test.cc
+        meta_programming/typelist_impl.cc
 
         misc/class_related_hash_function.cc
         misc/constexpr_test.cc
@@ -129,6 +130,7 @@ add_executable(cpp_weekly
         template/enable_if_test.cc
         template/function_template_test.cc
         template/for_loop_in_compile_time.cc
+        template/integer_sequence_test.cc
         template/partial_specialization_test.cc
         template/ref_cref_test.cc
         template/sfinae_test.cc

@@ -9,6 +9,7 @@ namespace Child1 {
 void foo() { std::cout << "Child1::foo()" << std::endl; }
 } // namespace Child1
 
+// inline namespace 可以帮助库作者无缝切换代码版本而无需库的使用者参与
 inline namespace Child2 {
 void foo() { std::cout << "Child2::foo()" << std::endl; }
 } // namespace Child2
