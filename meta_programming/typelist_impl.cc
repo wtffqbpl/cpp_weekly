@@ -192,4 +192,109 @@ public:
 template <typename List, template <typename T> class MetaFun>
 using Transform = typename TransformT<List, MetaFun>::Type;
 
+// Usage:
+// Transform<SignedIntegralTypes, AddConstT>;
+
+// ACCUMULATING TYPELIST
+
+// Transform is a useful algorithm for transforming each of the elements of the
+// sequence. It is often used in conjunction with Accumulate, which combines all
+// of the elements of a sequence into a single resulting value.
+
+template <typename List, template <typename X, typename Y> typename F,
+          typename I, bool = IsEmpty<List>::value>
+class AccumulateT;
+
+// recursive case:
+template <typename List, template <typename X, typename Y> typename F,
+          typename I>
+class AccumulateT<List, F, I, false>
+    : public AccumulateT<PopFront<List>, F, typename F<I, Front<List>>::Type> {
+};
+
+// basis case:
+template <typename List, template <typename X, typename Y> typename F,
+          typename I>
+class AccumulateT<List, F, I, true> {
+public:
+  using Type = I;
+};
+
+template <typename List, template <typename X, typename Y> typename F,
+          typename I>
+using Accumulate = typename AccumulateT<List, F, I>::Type;
+
+// using Result = Accumulate<SignedIntegralTypes, PushFrontT, Typelist<>>;
+
+// LARGEST TYPE
+template <typename T, typename U>
+class LargerTypeT : public std::conditional<(sizeof(T) >= sizeof(U)), T, U> {};
+
+template <typename Typelist, bool = IsEmpty<Typelist>::value>
+class LargestTypeAccT;
+
+template <typename Typelist>
+class LargestTypeAccT<Typelist, false>
+    : public AccumulateT<PopFront<Typelist>, LargerTypeT, Front<Typelist>> {};
+
+template <typename Typelist> class LargestTypeAccT<Typelist, true> {};
+
+template <typename Typelist>
+using LargestTypeAcc = typename LargestTypeAccT<Typelist>::Type;
+
+// INSERTION
+
+template <typename List, typename Element,
+          template <typename T, typename U> typename Compare,
+          bool = IsEmpty<List>::value>
+class InsertSortedT;
+
+// recursive case:
+template <typename List, typename Element,
+          template <typename T, typename U> typename Compare>
+class InsertSortedT<List, Element, Compare, false> {
+  // compute the tail of the resulting list:
+  using NewTail =
+      std::conditional_t<Compare<Element, Front<List>>::value,
+                         std::type_identity<List>,
+                         InsertSortedT<PopFront<List>, Element, Compare>>;
+
+  // compute the head of the resulting list:
+  using NewHead = std::conditional_t<Compare<Element, Front<List>>::value,
+                                     Element, Front<List>>;
+
+public:
+  using Type = PushFront<NewTail, NewHead>;
+};
+
+// basis case:
+template <typename List, typename Element,
+          template <typename T, typename U> typename Compare>
+class InsertSortedT<List, Element, Compare, true>
+    : public PushFront<List, Element> {};
+
+template <typename List, typename Element,
+          template <typename T, typename U> typename Compare>
+using InsertSorted = typename InsertSortedT<List, Element, Compare>::Type;
+
+template <typename List, template <typename T, typename U> typename Compare,
+          bool = IsEmpty<List>::value>
+class InsertionSortT;
+
+template <typename List, template <typename T, typename U> typename Compare>
+using InsertionSort = typename InsertionSortT<List, Compare>::Type;
+
+// recursive case (insert first element into sorted list):
+template <typename List, template <typename T, typename U> typename Compare>
+class InsertionSortT<List, Compare, false>
+    : public InsertSortedT<InsertionSort<PopFront<List>, Compare>, Front<List>,
+                           Compare> {};
+
+// basis case (an empty list is sorted):
+template <typename List, template <typename T, typename U> typename Compare>
+class InsertionSortT<List, Compare, true> {
+public:
+  using Type = List;
+};
+
 } // namespace type_list_ns
