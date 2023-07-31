@@ -74,6 +74,7 @@ add_executable(cpp_weekly
         meta_programming/limits_test.cc
         meta_programming/type_traits_test.cc
         meta_programming/typelist_impl.cc
+        meta_programming/tuple_impl.cc
 
         misc/class_related_hash_function.cc
         misc/constexpr_test.cc
@@ -89,6 +90,7 @@ add_executable(cpp_weekly
         misc/std_copy_test.cc
         misc/typeinfo_test.cc
         misc/reference_cnt_demo/reference_cnt.cc
+        misc/override_overload_overwrite.cc
 
         new_features/cpp_17/inline_variable/inline_variable_main.cc
         new_features/cpp_17/inline_variable/func.cc
@@ -144,8 +146,7 @@ add_executable(cpp_weekly
         topics/memory_block_management/memory_block_management_main.cc
 
         youtube/cpp_weekly_youtube_test.cc
-        youtube/e340_string_split_test.cc
-        )
+        youtube/e340_string_split_test.cc)
 
 include_directories(include
         new_features/cpp_17/inline_variable
