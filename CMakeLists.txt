@@ -91,6 +91,7 @@ add_executable(cpp_weekly
         misc/typeinfo_test.cc
         misc/reference_cnt_demo/reference_cnt.cc
         misc/override_overload_overwrite.cc
+        misc/for_range_test.cc
 
         new_features/cpp_17/inline_variable/inline_variable_main.cc
         new_features/cpp_17/inline_variable/func.cc
