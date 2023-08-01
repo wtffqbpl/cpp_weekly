@@ -27,7 +27,7 @@ void basic_test() {
 
 class IntIter {
 public:
-  IntIter(int *p) : p_(p) {}
+  explicit IntIter(int *p) : p_(p) {}
   bool operator!=(const IntIter &other) { return (p_ != other.p_); }
 
   const IntIter &operator++() {
