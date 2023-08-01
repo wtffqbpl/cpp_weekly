@@ -150,3 +150,74 @@ TEST(structured_binding, new_feature_test4) {
 
   EXPECT_TRUE(oss.str() == act_output);
 }
+
+class BindBase3 {
+public:
+  int a = 42;
+};
+
+class BindTest3 : public BindBase3 {
+public:
+  double b = 11.7;
+};
+
+namespace std {
+template <> struct tuple_size<BindTest3> {
+  static constexpr std::size_t valeu = 2;
+};
+
+template <> struct tuple_element<0, BindTest3> { using type = int; };
+
+template <> struct tuple_element<1, BindTest3> { using type = double; };
+
+} // namespace std
+
+template <std::size_t Idx> auto &get(BindTest3 &bt) = delete;
+
+template <> auto &get<0>(BindTest3 &bt) { return bt.a; }
+
+template <> auto &get<1>(BindTest3 &bt) { return bt.b; }
+
+class BindTest3New : public BindBase3 {
+public:
+  double b = 11.7;
+
+  template <std::size_t Idx> auto &get() = delete;
+};
+
+template <> auto &BindTest3New::get<0>() { return a; }
+template <> auto &BindTest3New::get<1>() { return b; }
+
+namespace std {
+template <> struct tuple_size<BindTest3New> {
+  static constexpr std::size_t value = 2;
+};
+
+template <> struct tuple_element<0, BindTest3New> { using type = int; };
+
+template <> struct tuple_element<1, BindTest3New> { using type = double; };
+
+} // namespace std
+
+void structured_binding_test_5() {
+  BindTest3New bt3;
+  auto &[x, y] = bt3;
+  x = 78;
+
+  std::cout << bt3.a << std::endl;
+}
+
+TEST(structured_binding, test5) {
+  testing::internal::CaptureStdout();
+  structured_binding_test_5();
+  auto act_output = testing::internal::GetCapturedStdout();
+
+  std::stringstream oss;
+  oss << "78\n";
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
