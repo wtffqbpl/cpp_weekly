@@ -1,5 +1,7 @@
 #include "internal_check_conds.h"
 #include <gtest/gtest.h>
+#include <ios>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -91,6 +93,80 @@ public:
 // Referenced:
 // https://stackoverflow.com/questions/34810580/does-base-class-destructor-prevent-move-constructor-being-generated
 
+int foo() noexcept { return 42; }
+int foo1() { return 42; }
+int foo2() throw() { return 42; }
+
+void test_noexcept_test2() {
+  std::cout << std::boolalpha;
+  std::cout << "noexcept(foo())   = " << noexcept(foo()) << std::endl;
+  std::cout << "noexcept(foo1())  = " << noexcept(foo1()) << std::endl;
+  std::cout << "noexcept(foo2())  = " << noexcept(foo2()) << std::endl;
+}
+
+template <typename T> T copy(const T &o) noexcept(noexcept(T(o))) { /* ... */
+}
+// noexcept(T(o)) --- 用来判断T(o) 是否可能抛出异常
+// noexcept(第一个noexcept) ---
+// 接受第二个noexcept运算符的返回值，以此来决定T类型的复制
+// 函数是否声明为不抛出异常。
+
+template <typename T>
+void swap(T &a, T &b) noexcept(
+    noexcept(T(std::move(a))) &&noexcept(a.operator=(std::move(b)))) {
+  static_assert(
+      noexcept(T(std::move(a))) &&noexcept(a.operator=(std::move(b))));
+  T tmp(std::move(a));
+  a = std::move(b);
+  b = std::move(tmp);
+}
+
+// FINAL SWAP VERSION
+
+struct X {
+  X() {}
+  X(X &&) noexcept {}
+  X(const X &) {}
+  X operator=(X &&) noexcept { return *this; }
+  X operator=(const X &) { return *this; }
+};
+
+struct X1 {
+  X1() {}
+  X1(X1 &&) {}
+  X1(const X1 &) {}
+  X1 operator=(X1 &&) { return *this; }
+  X1 operator=(const X1 &) { return *this; }
+};
+
+template <typename T>
+void swap_impl(T &a, T &b, std::integral_constant<bool, true>) noexcept {
+  T tmp(std::move(a));
+  a = std::move(b);
+  b = std::move(tmp);
+}
+
+template <typename T>
+void swap_impl(T &a, T &b, std::integral_constant<bool, false>) {
+  T tmp(a);
+  a = b;
+  b = tmp;
+}
+// noexcept(T(std::move(a))) && noexcept(a.operator=(std::move(b)))>())))
+// is equivalent to
+// std::is_nothrow_move_constructible_v<T> &&
+// std::is_nothrow_move_assignable_v<T>
+
+template <typename T>
+void swap_new(T &a, T &b) noexcept(noexcept(swap_impl(
+    a, b,
+    std::integral_constant<bool, noexcept(T(std::move(a))) &&noexcept(
+                                     a.operator=(std::move(b)))>()))) {
+  swap_impl(a, b,
+            std::integral_constant<bool, noexcept(T(std::move(a))) &&noexcept(
+                                             a.operator=(std::move(b)))>());
+}
+
 } // namespace noexcept_test
 
 TEST(noexcept_test, basic_test) {
@@ -137,4 +213,22 @@ TEST(noexcept_test, basic_test) {
 #endif
 
   EXPECT_TRUE(oss.str() == output);
+}
+
+TEST(noexcept_test, test2) {
+  testing::internal::CaptureStdout();
+  noexcept_test::test_noexcept_test2();
+  auto act_output = testing::internal::GetCapturedStdout();
+
+  std::stringstream oss;
+
+  oss << "noexcept(foo())   = true\n"
+         "noexcept(foo1())  = false\n"
+         "noexcept(foo2())  = true\n";
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
 }
