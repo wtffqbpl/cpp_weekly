@@ -172,6 +172,9 @@ void swap_new(T &a, T &b) noexcept(noexcept(swap_impl(
 TEST(noexcept_test, basic_test) {
   using namespace noexcept_test;
 
+  std::vector<float> b(10);
+  std::vector<float> c = b;
+
   T t;
   U u;
   V v;

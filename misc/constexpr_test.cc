@@ -1,4 +1,6 @@
 #include "gtest/gtest.h"
+#include <cmath>
+#include <type_traits>
 
 class Debug {
 public:
@@ -39,4 +41,30 @@ TEST(constexpr_test, constexpr_ctor) {
 #endif
 
   EXPECT_TRUE(oss.str() == act_output);
+}
+
+constexpr double power(double b, int x) {
+  if (std::is_constant_evaluated() && x >= 0) {
+    double r = 1.0, p = b;
+    auto u = static_cast<unsigned>(x);
+
+    while (u != 0) {
+      if (u & 1)
+        r *= p;
+      u /= 2;
+      p *= p;
+    }
+    return r;
+  } else {
+    return std::pow(b, static_cast<double>(x));
+  }
+}
+
+TEST(constexpr_test, is_constant_evaluated_test) {
+  constexpr double kilo = power(10.0, 3);
+  int n = 3;
+  double mucho = power(10.0, n);
+
+  EXPECT_FLOAT_EQ(mucho, 10.0 * 10.0 * 10.0);
+  EXPECT_FLOAT_EQ(kilo, mucho);
 }
