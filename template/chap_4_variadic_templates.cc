@@ -4,6 +4,8 @@
 #include <unordered_set>
 #include <utility>
 
+#include "internal_check_conds.h"
+
 template <typename T> void print(T arg) { std::cout << arg << '\n'; }
 
 template <typename T, typename... Types> void print(T firstArg, Types... args) {
@@ -71,6 +73,64 @@ TEST(chap4_variadic_templates, sizeof_test) {
 #endif
 
   EXPECT_TRUE(oss.str() == act_output);
+}
+
+// 一元空包的处理:
+// 为了解决一元 fold expression 中参数包为空的问题，下面的规则是必须遵守的
+// 1. 只有 && || , 运算符能够在空参数包的一元 fold expression 中使用
+// 2. && 的求值结果一定为true
+// 3. || 的求值结果一定为false
+// 4. , 的求值结果为 void()
+// 5. 其他运算符都是非法的
+
+template <typename... Args>
+auto andop(Args... args) { return (args && ...); }
+
+TEST(variadic_templates, empty_fold_expression_test)
+{
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  std::cout << std::boolalpha << andop() << std::endl;
+
+  oss << "true\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
+
+// using expression in pack expansion (C++17)
+
+template <typename T>
+class base {
+public:
+  base() = default;
+  base(const T &t) : t_(t) {}
+private:
+  T t_;
+};
+
+template <typename... Args>
+class derived : public base<Args>... // 可变参数类模版derived 继承了通过它的形参包实例化
+                // 的base类模版
+{
+public:
+  // 将实例化的base类模版的构造函数引入了derived class
+  using base<Args>::base...;
+};
+
+TEST(variadic_templates, using_pack_expasion_test)
+{
+  // derived<int, std::string, bool> 表示 derived class具有了:
+  // base<int>, base<std::string>, base<bool> 三个类的构造函数
+  derived<int, std::string, bool> d = 11;
+  derived<int, std::string, bool> d2 = std::string("hello");
+  derived<int, std::string, bool> d3 = true;
 }
 
 /// Fold Expressions.
