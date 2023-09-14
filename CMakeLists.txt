@@ -39,6 +39,7 @@ add_executable(cpp_weekly
         algorithms/accumulate_test.cc
         algorithms/integer_divide_test.cc
         algorithms/odd_even_sort.cc
+        algorithms/partial_sort_test.cc
         algorithms/partition_test.cc
         algorithms/transform_test.cc
         algorithms/std_generate_test.cc
