@@ -130,11 +130,9 @@ TEST(variadic_templates, using_pack_expasion_test) {
   derived<int, std::string, bool> d3 = true;
 }
 
-template <typename F, typename... Args>
-auto delay_invoke(F f, Args... args)
-{
-  return [f = std::move(f), f_args = std::make_tuple(std::move(args)...)]()
-          -> decltype(auto) {
+template <typename F, typename... Args> auto delay_invoke(F f, Args... args) {
+  return [f = std::move(f),
+          f_args = std::make_tuple(std::move(args)...)]() -> decltype(auto) {
     return std::apply(f, f_args);
   };
 }

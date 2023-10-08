@@ -151,7 +151,7 @@ add_executable(cpp_weekly
         topics/memory_block_management/memory_block_management_main.cc
 
         youtube/cpp_weekly_youtube_test.cc
-        youtube/e340_string_split_test.cc)
+        youtube/e340_string_split_test.cc template/basics_test.cc)
 
 include_directories(include
         new_features/cpp_17/inline_variable

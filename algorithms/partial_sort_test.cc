@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
 #include <algorithm>
 #include <array>
+#include <gtest/gtest.h>
 
 #include "internal_check_conds.h"
 
@@ -20,31 +20,25 @@ namespace {
 ///                   Compare comp);
 /// \endcode
 
-
-void print_res(auto const &s, int middle)
-{
+void print_res(auto const &s, int middle) {
   for (int a : s)
     std::cout << a << ' ';
   std::cout << '\n';
 
-  if (middle > 0)
-  {
+  if (middle > 0) {
     while (middle-- > 0)
       std::cout << "--";
     std::cout << '^';
-  }
-  else if (middle < 0)
-  {
-    for (auto i = s.size() + middle; --i; std::cout << "  ")
-    {}
-    for (std::cout << '^'; middle++ < 0; std::cout << "--")
-    {}
+  } else if (middle < 0) {
+    for (auto i = s.size() + middle; --i; std::cout << "  ") {
+    }
+    for (std::cout << '^'; middle++ < 0; std::cout << "--") {
+    }
   }
   std::cout << '\n';
 }
 
-void test1()
-{
+void test1() {
   std::stringstream oss;
   testing::internal::CaptureStdout();
 
@@ -80,15 +74,13 @@ void test1()
 
 namespace impl {
 template <typename RandomIt, typename Compare>
-void sift_down(RandomIt first, RandomIt last, const Compare &comp)
-{
+void sift_down(RandomIt first, RandomIt last, const Compare &comp) {
   // shift down element at 'first'
   const auto length = static_cast<size_t>(last - first);
   std::size_t current = 0;
   std::size_t next = 2;
 
-  while (next < length)
-  {
+  while (next < length) {
     if (comp(*(first + next), *(first + (next - 1))))
       --next;
     if (!comp(*(first + current), *(first + next)))
@@ -103,13 +95,11 @@ void sift_down(RandomIt first, RandomIt last, const Compare &comp)
 }
 
 template <typename RandomIt, typename Compare>
-void heap_select(RandomIt first, RandomIt middle, RandomIt last, const Compare &comp)
-{
+void heap_select(RandomIt first, RandomIt middle, RandomIt last,
+                 const Compare &comp) {
   std::make_heap(first, middle, comp);
-  for (auto i = middle; i != last; ++i)
-  {
-    if (comp(*i, *first))
-    {
+  for (auto i = middle; i != last; ++i) {
+    if (comp(*i, *first)) {
       std::iter_swap(first, i);
       sift_down(first, middle, comp);
     }
@@ -117,17 +107,14 @@ void heap_select(RandomIt first, RandomIt middle, RandomIt last, const Compare &
 }
 
 template <typename RandomIt, typename Compare>
-void partial_sort_new(RandomIt first, RandomIt middle, RandomIt last, Compare comp)
-{
+void partial_sort_new(RandomIt first, RandomIt middle, RandomIt last,
+                      Compare comp) {
   impl::heap_select(first, middle, last, comp);
   std::sort_heap(first, middle, comp);
 }
 
-}
+} // namespace impl
 
-}
+} // namespace
 
-TEST(partial_sort_test, test1)
-{
-  test1();
-}
+TEST(partial_sort_test, test1) { test1(); }
