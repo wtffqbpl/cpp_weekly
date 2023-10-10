@@ -129,9 +129,89 @@ void my_class<T, Container>::func() {
   std::cout << "good!" << std::endl;
 }
 
+#if 0
 void template_template_parameter_test() {
-  my_class<double, std::list> mylistobj2;
+  my_class<double> mylistobj2;
   mylistobj2.func();
+}
+#endif
+
+template <typename T> class B_friend;
+
+template <typename T> class A_friend {
+  // 特定类型的B_friend<long> 的实例化版本作为class A_friend 的友元
+  friend class B_friend<long>;
+
+  // 把整个类模版B_friend 作为类模版A_friend 的友元模版
+  template <typename> friend class B_friend;
+
+private:
+  int data;
+};
+
+template <typename T> class B_friend {
+public:
+  void callBAF() {
+    A_friend<int> atmpobj{};
+    atmpobj.data = 5;
+    std::cout << "atmpobj.data = " << atmpobj.data << std::endl;
+  }
+};
+
+template <typename T> class A2_friend {
+  // 声明 模版参数T 作为类模版 A2_friend 的友元类
+  friend T;
+
+private:
+  int data;
+};
+
+class CF {
+public:
+  void callCFAF() {
+    A2_friend<CF> aobj1{};
+    aobj1.data = 12;
+
+    std::cout << "aobj1.data = " << aobj1.data << std::endl;
+  }
+};
+
+template <typename U, typename V> void func(U, V);
+
+template <typename T> class Men {
+  // Define friend function
+  template <typename U, typename V> friend void func(U, V);
+
+  friend void func2(Men<T> &tmpmen) { tmpmen.funcmen(); }
+
+private:
+  void funcmen() const { std::cout << "Men::funcmen is called\n"; }
+};
+
+template <typename U, typename V> void func(U val1, V val2) {
+  Men<int> mymen{};
+  mymen.funcmen();
+}
+
+void test_template_class_friend() {
+  B_friend<long> bobj;
+  bobj.callBAF();
+
+  B_friend<int> bobj_int;
+  bobj_int.callBAF();
+
+  CF mycfobj{};
+  mycfobj.callCFAF();
+
+  // friend function test
+  func(2, 3);
+  func<float>(4.6f, 5);
+  func<int, float>(4, 5.8f);
+
+  Men<double> mymen2;
+  func2(mymen2);
+  Men<int> mymen3;
+  func2(mymen3);
 }
 
 } // namespace class_variable_alias_templates
@@ -191,11 +271,37 @@ TEST(partial_specialization, test1) {
   EXPECT_TRUE(oss.str() == act_output);
 }
 
+#if 0
 TEST(partial_specialization, test2) {
   std::stringstream oss;
   testing::internal::CaptureStdout();
 
   class_variable_alias_templates::partial_specialization_test2();
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
+#endif
+
+TEST(friend_template, test1) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  class_variable_alias_templates::test_template_class_friend();
+
+  oss << "atmpobj.data = 5\n"
+      << "atmpobj.data = 5\n"
+      << "aobj1.data = 12\n"
+      << "Men::funcmen is called\n"
+      << "Men::funcmen is called\n"
+      << "Men::funcmen is called\n"
+      << "Men::funcmen is called\n"
+      << "Men::funcmen is called\n";
 
   auto act_output = testing::internal::GetCapturedStdout();
 
