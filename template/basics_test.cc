@@ -545,3 +545,90 @@ TEST(variadic_template, test1) {
 
   EXPECT_TRUE(oss.str() == act_output);
 }
+
+namespace variadic_template_test {
+
+template <typename... Args>
+class Base {
+public:
+  Base() {
+    std::cout << "Base ctor is called, sizeof...(Args) = " << sizeof...(Args)
+              << std::endl;
+  }
+};
+
+template <typename... Args>
+class Derived1 : public Base<Args...> {
+public:
+  Derived1() {
+    std::cout << "Derived1 ctor is called, sizeof...(Args) = "
+              << sizeof...(Args) << std::endl;
+  }
+};
+
+template <typename... Args>
+class Derived2 : public Base<Args>... {
+public:
+  Derived2() {
+    std::cout << "Derived2 ctor is called, sizeof...(Args) = "
+              << sizeof...(Args) << std::endl;
+  }
+};
+
+template <typename... Args>
+class Derived3 : public Base<Args, char>... {
+public:
+  Derived3() {
+    std::cout << "Derived3 ctor is called, sizeof...(Args) = "
+              << sizeof...(Args) << std::endl;
+  }
+};
+
+template <typename... Args>
+class Derived4 : public Base<Args, Args...>... {
+public:
+  Derived4() {
+    std::cout << "Derived4 ctor is called, sizeof...(Args) = "
+              << sizeof...(Args) << std::endl;
+  }
+};
+
+void test_variadic_template_inherit() {
+  Derived1<double, float, int> temp_obj1{};
+  Derived2<double, float, int> temp_obj2{};
+  Derived3<double, float, int> temp_obj3{};
+  Derived4<double, float, int> temp_obj4{};
+}
+
+} // namespace variadic_template_test
+
+TEST(variadic_template_inherience, test1) {
+  std::stringstream oss;
+
+  testing::internal::CaptureStdout();
+
+  variadic_template_test::test_variadic_template_inherit();
+
+  oss << "Base ctor is called, sizeof...(Args) = 3\n"
+         "Derived1 ctor is called, sizeof...(Args) = 3\n"
+         "Base ctor is called, sizeof...(Args) = 1\n"
+         "Base ctor is called, sizeof...(Args) = 1\n"
+         "Base ctor is called, sizeof...(Args) = 1\n"
+         "Derived2 ctor is called, sizeof...(Args) = 3\n"
+         "Base ctor is called, sizeof...(Args) = 2\n"
+         "Base ctor is called, sizeof...(Args) = 2\n"
+         "Base ctor is called, sizeof...(Args) = 2\n"
+         "Derived3 ctor is called, sizeof...(Args) = 3\n"
+         "Base ctor is called, sizeof...(Args) = 4\n"
+         "Base ctor is called, sizeof...(Args) = 4\n"
+         "Base ctor is called, sizeof...(Args) = 4\n"
+         "Derived4 ctor is called, sizeof...(Args) = 3\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
