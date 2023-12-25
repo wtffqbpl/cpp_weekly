@@ -30,7 +30,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Boost)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_FLAGS "-std=c++2a")
+set(CMAKE_CXX_FLAGS "-std=c++20")
 enable_testing()
 
 file(GLOB_RECURSE cpp_weekly_srcs *.cc)
@@ -53,6 +53,8 @@ add_executable(cpp_weekly
         concurrent/producer_consumer.cc
 
         conversion_function/conversion_function.cc
+
+        cpp20_features/comparisons.cc
 
         cpp_challenges/chap1_math_problems.cc
 

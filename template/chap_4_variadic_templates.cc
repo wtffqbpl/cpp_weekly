@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include "internal_check_conds.h"
 

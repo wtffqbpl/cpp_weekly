@@ -180,7 +180,6 @@ template <typename T> void foo(T t) {
       foo(t - 1);
   } else {
     // error if not declared and not discarded.
-    std::undeclare_reachable(t);
     static_assert(!std::is_integral_v<T>, "no integral");
   }
 }
