@@ -94,6 +94,69 @@ public:
   }
 };
 
+// If and only if an operator<=> member is defined as defaulted, then by
+// definition a corresponding operator== member is also defined if no defaulted
+// operator== is provided. All aspects (visibility, virtual, attributes,
+// requirements, etc.) are adopted.
+template <typename T> class Type {
+public:
+  [[nodiscard]] std::strong_ordering operator<=>(const Type &) const
+    requires(!std::same_as<T, bool>)
+  = default;
+};
+// is equivalent to the following:
+template <typename T> class TypeNew {
+public:
+  [[nodiscard]] std::strong_ordering operator<=>(const TypeNew &) const
+    requires(!std::same_as<T, bool>)
+  = default;
+
+  [[nodiscard]] bool operator==(const TypeNew &) const
+    requires(!std::same_as<T, bool>)
+  = default;
+};
+
+struct Coord {
+  // This is enough to support all six comparison operators for objects.
+  double x{};
+  double y{};
+  double z{};
+
+  auto operator<=>(const Coord &) const = default;
+};
+
+void test_default_operators() {
+  std::vector<Coord> coll{
+      {0, 5, 5}, {5, 0, 0}, {3, 5, 5}, {3, 0, 0}, {3, 5, 7}};
+
+  std::sort(coll.begin(), coll.end());
+  for (const auto &elem : coll) {
+    std::cout << elem.x << '/' << elem.y << '/' << elem.z << '\n';
+  }
+}
+
+std::ostream &operator<<(std::ostream &os, std::strong_ordering val) {
+  if (val == std::strong_ordering::less)
+    return os << "less";
+  if (val == std::strong_ordering::greater)
+    return os << "greater";
+  return os << "equal";
+}
+
+void lexico_three_way_test() {
+  std::vector v1{0, 8, 15, 47, 11};
+  std::vector v2{0, 15, 8};
+
+  auto r1 =
+      std::lexicographical_compare(v1.begin(), v1.end(), v2.begin(), v2.end());
+
+  auto r2 = std::lexicographical_compare_three_way(v1.begin(), v1.end(),
+                                                   v2.begin(), v2.end());
+
+  std::cout << "r1: " << r1 << '\n';
+  std::cout << "r2: " << r2 << '\n';
+}
+
 } // namespace
 
 TEST(copmarison_test, test_rewriting) {
@@ -118,4 +181,44 @@ TEST(comparison_test, three_way_comparison_test) {
   auto x = 3 <=> 4;
 
   EXPECT_TRUE(x < 0);
+}
+
+TEST(comparison_test, default_comparison_operators_test) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  test_default_operators();
+
+  oss << "0/5/5\n"
+         "3/0/0\n"
+         "3/5/5\n"
+         "3/5/7\n"
+         "5/0/0\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_EQ(oss.str(), act_output);
+}
+
+TEST(comparison_test, lexico_three_way_test) {
+  std::stringstream oss;
+
+  testing::internal::CaptureStdout();
+
+  lexico_three_way_test();
+
+  oss << "r1: 1\n"
+         "r2: less\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_EQ(oss.str(), act_output);
 }
