@@ -57,6 +57,7 @@ add_executable(cpp_weekly
         cpp20_features/comparisons.cc
         cpp20_features/latches.cc
         cpp20_features/barrier_test.cc
+        cpp20_features/semaphores_test.cc
 
         cpp_challenges/chap1_math_problems.cc
 
