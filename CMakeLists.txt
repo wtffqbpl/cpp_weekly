@@ -55,6 +55,7 @@ add_executable(cpp_weekly
         conversion_function/conversion_function.cc
 
         cpp20_features/comparisons.cc
+        cpp20_features/latches.cc
 
         cpp_challenges/chap1_math_problems.cc
 

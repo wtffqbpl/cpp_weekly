@@ -77,6 +77,23 @@ public:
   }
 };
 
+class Person {
+private:
+  std::string name;
+  double value;
+
+public:
+  auto operator<=>(const Person &rhs) const
+  -> std::common_comparison_category_t<decltype(name <=> rhs.name),
+                                       decltype(value <=> rhs.value)> {
+    using comp1_t = decltype(name <=> rhs.name);
+
+    auto cmp1 = name <=> rhs.name; // return strong-ordering for std::string
+    if (cmp1 != comp1_t::equal) return cmp1;
+    return value <=> rhs.value;
+  }
+};
+
 } // namespace
 
 TEST(copmarison_test, test_rewriting) {
