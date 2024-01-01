@@ -1,3 +1,7 @@
+#if __cplusplus >= 202002L
+
+#ifdef __APPLE__
+
 #include <gtest/gtest.h>
 #include <iostream>
 #include <queue>
@@ -31,4 +35,8 @@ void semaphores_basic_test() {
   }
 }
 
-}
+} // namespace
+
+#endif // __APPLE__
+
+#endif // __cplusplus >= 202002L

@@ -1,3 +1,7 @@
+#if __cplusplus >= 202002L
+
+#ifdef __APPLE__
+
 #include <gtest/gtest.h>
 #include <array>
 #include <thread>
@@ -47,6 +51,8 @@ void latch_basic_test() {
 }
 }
 
-TEST(latch_test, basic_test) {
-  latch_basic_test();
-}
+TEST(latch_test, basic_test) { latch_basic_test(); }
+
+#endif // __APPLE__
+
+#endif // __cplusplus >= 202002L

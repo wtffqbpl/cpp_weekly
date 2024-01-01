@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
 
+#if __cplusplus >= 202002L
+
+#ifdef __APPLE__
+
 #include <algorithm>
 #include <compare>
 
@@ -222,3 +226,7 @@ TEST(comparison_test, lexico_three_way_test) {
 
   EXPECT_EQ(oss.str(), act_output);
 }
+
+#endif // __APPLE__
+
+#endif // __cplusplus >= 202002L

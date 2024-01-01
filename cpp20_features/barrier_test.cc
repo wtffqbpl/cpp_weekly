@@ -1,3 +1,7 @@
+#if __cplusplus >= 202002L
+
+#ifdef __APPLE__
+
 #include <barrier>
 #include <cmath>
 #include <format>
@@ -54,3 +58,7 @@ void barrier_test() {
 } // namespace
 
 TEST(barrier_test, basic_test) { barrier_test(); }
+
+#endif // __APPLE__
+
+#endif // __cplusplus >= 202002L

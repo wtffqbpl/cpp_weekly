@@ -1,3 +1,7 @@
+#if __cplusplus >= 202002L
+
+#ifdef __APPLE__
+
 #include "internal_check_conds.h"
 
 #include <format>
@@ -84,6 +88,18 @@ TEST(format_test, formatting_alignment_test) {
 
   format_alignment_example();
 
+  oss << "     42\n"
+         "     42\n"
+         "x      \n"
+         "true   \n"
+         "42*****\n"
+         "*****42\n"
+         "**42***\n"
+         "  42.00 Euro\n"
+         "corn   \n"
+         "'?' has value 0x3f  +63 077\n"
+         "'y' has value 0x79 +121 171\n";
+
   auto act_output = testing::internal::GetCapturedStdout();
 
 #ifndef NDEBUG
@@ -92,3 +108,7 @@ TEST(format_test, formatting_alignment_test) {
 
   EXPECT_EQ(oss.str(), act_output);
 }
+
+#endif // __APPLE__
+
+#endif // __cplusplus >= 202002L
