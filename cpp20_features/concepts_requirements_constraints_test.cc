@@ -231,6 +231,138 @@ void add(Coll &coll, const T &val) {
   coll.push_back(val);
 }
 
+template <typename Coll, typename T>
+  requires std::floating_point<T>
+void add(Coll &coll, const T &val) {
+  // ... special code for floating-point values
+  coll.push_back(val);
+}
+
+// Because we use a concept that applies to a single template parameter, we can
+// also use the shorthand notation like this:
+template <typename Coll, std::floating_point T>
+void add(Coll &coll, const T &val) {
+  coll.push_back(val);
+}
+
+// Alternatively, we can use `auto` parameters:
+/// \code
+/// void add(auto &coll, const std::floating_point auto &val) {
+///   coll.push_back(val);
+/// }
+/// \endcode
+
+// Overload resolution also prefers overloads or specializations that have
+// constraints over those that have fewer or no constraints.
+
+// It is better to define a concept that yields whether a type can be converted
+// to another type without narrowing, which is possible in a short tricky
+// requirement:
+template <typename From, typename To>
+concept ConvertWithoutNarrowing =
+    std::convertible_to<From, To> && requires(From &&x) {
+      {
+        std::type_identity_t<To[]>{std::forward<From>(x)}
+      } -> std::same_as<To[1]>;
+    };
+
+// EXPLAINS:
+// std::convertible_to<From, To>:
+//  * This part checks whether type `From` is convertible to type `To`. It is a
+//    standard library concept that verifies if an object of type `From` can be
+//    converted to type `To` using implicit conversion.
+//  requires (From &&x) {...}
+//    * This introduces a requires-clause, specifying additional requirements
+//      that must be satisfied for the concept to be true. It uses a constrained
+//      requires expression.
+//  {std::type_identity_t<To[]>{std::forward<From>(x)}} -> std::same_as<To[1]>;
+//    * This is the body of the requires-clause, defining a constrained
+//      expression.
+//    * std::type_identity_t<To[]> is used to form a type that is an identity
+//      for `To[]`. This is used to prevent array-to-pointer decay during the
+//      expression evaluation.
+//    * `std::forward<From>(x): is used to forward the object `x` with its
+//      original value category (lvalue or rvalue).
+//    * The expression `{...}` then attempts to create an array of type `To[]`
+//      from the forwarded `x`.
+//    * The `-> std::same_as<To[1]>` specifies that the type of the resulting
+//      array must be exactly `To[1]`. This ensures that the conversion does
+//      not narrow the array.
+// In summary, the concept `ConvertWithoutNarrowing` checks whether a conversion
+// from type `From` to type `To` is possible and, additionally, ensures that the
+// conversion does not involve narrowing. The array size is explicitly checked
+// to be one (`To[1]`), preventing loss of information during the conversion.
+//  This concept is useful in scenarios where you want to ensure that a
+//  conversion between types maintains the size or precision of the original
+//  value, and it's not subject to narrowing conversions.
+//
+// In C++17, you don't have the concept keyword, so you cannot express
+// constraints directly. However, you can achieve similar functionality using
+// SFINAE (Substitution Failure is Not An Error) techniques and type traits.
+// Here's an attempt to express the same constraint without using the `concept`
+// feature:
+// clang-format off
+template <typename From, typename To>
+struct ConvertWithoutNarrowingHelper {
+private:
+  // Check if `From` is convertible to `To`.
+  template <typename F, typename T>
+  static auto testConvertible(const F &from) -> decltype(static_cast<T>(from), std::true_type{});
+
+  template <typename F, typename T>
+  static auto testConvertible(...) -> std::false_type;
+
+  // Check if the expression creates an array of type To[1].
+  template <typename F, typename T>
+  static auto testExpression(const F &from) -> decltype(T{from}, std::true_type{});
+
+  template <typename F, typename T>
+  static auto testExpression(...) -> std::false_type;
+
+public:
+  static constexpr bool value =
+      decltype(testConvertible<From, To>(std::declval<From>()))::value &&
+      decltype(testExpression<From, To>(std::declval<From>()))::value;
+};
+
+template <typename From, typename To>
+using ConvertWithoutNarrowingUnderC20 = std::bool_constant<ConvertWithoutNarrowingHelper<From, To>::value>;
+// clang-format on
+// std::bool_constant creates a compile-time boolean constant reflecting the
+// result of the checks.
+// You can use `ConvertWithoutNarrowingUnderC20<From, To>::value` to check
+// whether the conversion satisfies the conditions. Please note that this
+// approach relies on SFINAE, and the error messages might not be as
+// user-friendly as those provided by concepts in C++20.
+//
+// clang-format off
+// Another version:
+template <typename From, typename To>
+struct ConvertWithoutNarrowingV3 {
+private:
+  template <typename T, typename U>
+  static constexpr std::false_type check(U*);
+
+  template <typename T, typename U>
+  static constexpr std::true_type check(T*);
+
+  static constexpr bool convertible = std::is_convertible_v<From, To>;
+  static constexpr bool noNarrowing = decltype(check<To[1], std::type_identity_t<To[]>{std::declval<From>()}>())::value;
+
+public:
+  static constexpr bool value = convertible && noNarrowing;
+};
+template <typename From, typename To>
+using ConvertWithoutNarrowingV3_v = std::bool_constant<ConvertWithoutNarrowingV3<From, To>::value>;
+// clang-format on
+
+// We can then use this concept to formulate a corresponding constraint:
+template <typename Coll, typename T>
+  requires ConvertWithoutNarrowing<T, typename Coll::value_type>
+void add(Coll &coll, const T &val) {
+  coll.push_back(val);
+}
+
 } // namespace
 
 TEST(concept_test, test1) {
