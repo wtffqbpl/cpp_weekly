@@ -61,6 +61,7 @@ add_executable(cpp_weekly
         cpp20_features/placeholder_types.cc
         cpp20_features/format_test.cc
         cpp20_features/atomic_ref_test.cc
+        cpp20_features/concepts_requirements_constraints_test.cc
 
         cpp_challenges/chap1_math_problems.cc
 
