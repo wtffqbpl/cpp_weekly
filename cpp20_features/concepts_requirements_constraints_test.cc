@@ -1,10 +1,14 @@
 #include <gtest/gtest.h>
+#include <atomic>
 #include <concepts>
+#include <ranges>
+#include <set>
 #include <type_traits>
+#include <vector>
 
 #include "internal_check_conds.h"
 
-namespace {
+namespace concept_test1 {
 
 template <typename T>
 requires (!std::is_pointer_v<T>)
@@ -363,9 +367,73 @@ void add(Coll &coll, const T &val) {
   coll.push_back(val);
 }
 
-} // namespace
+template <typename Coll>
+concept SupportsPushBackV2 = requires(Coll coll, Coll::value_type val) {
+    coll.push_back(val);
+};
+// Note that we do not have to use `typename` here to use Coll::value_type.
+// Since C++20, `typename` is no longer required when it is clear by the context
+// that a qualified member must be a type.
+
+template <typename Coll>
+concept SupportsPushBackV3 = requires(Coll coll) {
+    coll.push_back(std::declval<typename Coll::value_type&>());
+};
+// Note that the & is important here. Without &, we would only require that we
+// can insert an rvalue using move semantics. With &, we create an lvalue so
+// that we require that push_back() copies.
+
+template <typename Coll>
+concept SupportsPushBackV4 = requires(Coll coll) {
+  coll.push_back(std::declval<std::ranges::range_value_t<Coll>>());
+};
+// In general, using std::ranges::range_value_t<> makes code more generic when
+// the element type of a collection is needed.
+
+// We can also use the concept SupportsPushBack directly in an `if constexpr` condition:
+
+void foo(auto &coll, const auto &val) {
+  if constexpr (SupportsPushBackV3<decltype(coll)>) {
+    coll.push_back(val);
+  } else {
+    coll.insert(val);
+  }
+}
+
+void foo2(auto &coll, const auto &val) {
+  if constexpr (requires { coll.push_back(val); }) {
+    coll.push_back(val);
+  } else {
+    coll.insert(val);
+  }
+}
+// Concepts versus Variable Templates
+// Concepts have the following benefits:
+//  * They subsume.
+//  * They can be used as type constraints directly in front of template
+//    parameters or auto.
+//  * They can be used with a compile-time if when using ad-hoc requirements.
+
+// Inserting Single and Multiple values
+#if 1
+template <SupportsPushBackV3 Coll, std::ranges::input_range T>
+void add(Coll &coll, const T &val) {
+  coll.push_back(coll.end(), val.begin(), val.end());
+}
+
+#else
+
+template <SupportsPushBackV3 Coll, std::ranges::input_range T>
+void add(Coll &coll, const T &val) {
+  coll.push_back(coll.end(), std::ranges::begin(val), std::ranges::end(val));
+}
+#endif
+
+} // namespace concept_test1
 
 TEST(concept_test, test1) {
+  using namespace concept_test1;
+
   std::stringstream oss;
 
   testing::internal::CaptureStdout();
@@ -385,6 +453,8 @@ TEST(concept_test, test1) {
 }
 
 TEST(concept_test, test2) {
+  using namespace concept_test1;
+
   std::vector<int> vec;
   add(vec, 42); // CORRECT
 
@@ -422,4 +492,136 @@ TEST(concept_test, test2) {
   // 1 error generated.
   // ninja: build stopped: subcommand failed.
   // clang-format on
+}
+
+namespace concept_test2 {
+
+// concept for container with push_back():
+template <typename Coll>
+concept SupportsPushBack = requires(Coll coll, Coll::value_type val) {
+  coll.push_back(val);
+};
+
+// concept to disable narrowing conversion:
+template <typename From, typename To>
+concept ConvertsWithoutNarrowing =
+  std::convertible_to<From, To> &&
+      requires (From &&x) {
+        {
+          std::type_identity_t<To[]>{std::forward<From>(x)}
+        } -> std::same_as<To[1]>;
+};
+
+// add() for single value:
+template <typename Coll, typename T>
+requires ConvertsWithoutNarrowing<T, typename Coll::value_type>
+void add(Coll &coll, const T &val) {
+  if constexpr (SupportsPushBack<Coll>)
+  {
+    coll.push_back(val);
+  } else {
+    coll.insert(val);
+  }
+}
+
+// add() for multiple values:
+template <typename Coll, std::ranges::input_range T>
+requires ConvertsWithoutNarrowing<std::ranges::range_value_t<T>,
+                                  typename Coll::value_type>
+void add(Coll &coll, const T &val) {
+  if constexpr (SupportsPushBack<Coll>) {
+    coll.insert(coll.end(), std::ranges::begin(val), std::ranges::end(val));
+  } else {
+    coll.insert(std::ranges::begin(val), std::ranges::end(val));
+  }
+}
+
+void test() {
+  std::vector<int> i_vec;
+  add(i_vec, 42);
+
+  std::set<int> i_set;
+  add(i_set, 42);
+
+  short s = 42;
+  add(i_vec, s);
+
+  long long ll = 42;
+  // add(i_vec, ll);  // ERROR: narrowing
+  // add(i_vec, 7.7); // ERROR: narrowing
+
+  std::vector<double> d_vec;
+  add(d_vec, 0.7);
+  add(d_vec, 0.7f);
+  // add(d_vec, 7);   // ERROR: narrowing
+
+  // insert collections:
+  add(i_vec, i_set);
+  add(i_set, i_vec);
+
+  // can even insert raw array:
+  int vals[] = {0, 8, 18};
+  add(i_vec, vals);
+  // add(d_vec, vals); // ERROR: narrowing
+
+}
+
+} // namespace concept_test2
+
+TEST(concept_test, test3) {
+  using namespace concept_test2;
+
+  test();
+}
+
+namespace concept_test3 {
+
+// Semantic Constraints
+// Concepts might check both syntactic and semantic constraints:
+//  * Syntactic constraints: means that at compile time, we can check whether
+//    certain functional requirements are satisfied ("Is a specific operation
+//    supported?" or "Does a specific operation yield a specific type?").
+//  * Semantic constraints: mean that certain requirements are satisfied that
+//    can only be checked at runtime ("Does an operation have the same effect?"
+//    or "Does the same operation performed for a specific value always yield
+//    the same result?").
+// Sometimes, concepts allow programmers to convert semantic constraints into
+// syntactic constraints by providing an interface to specify that a semantic
+// constraint is fulfilled or is not fulfilled.
+//
+// Examples of Semantic Constraints
+// std::ranges::sized_range: it guarantees that the number of elements in a
+// range can be computed in constant time (either by calling the member size()
+// or by computing the difference between the beginning and the end).
+
+// Concepts subsume, which means that a concept can be a subset of another
+// concept, so that in overload resolution the more constrained concept is
+// preferred.
+
+// Concepts are more than just expressions that evaluate Boolean results at
+// compile time. You should usually prefer them over type traits and other
+// compile-time expressions. Concepts have a couple of benefits:
+//  * They subsume.
+//  * They can be used as type constraints directly in front of template
+//    parameters or auto.
+//  * They can be used with the compile-time if (if constexpr) as introduced
+//    before.
+
+// requires Clauses
+// A requires clause uses the keyword requires with a compile-time Boolean
+// expression to restrict the availability of the template. The Boolean
+// expression can be:
+//  * An ad-hoc Boolean compile-time expression.
+//  * A concept
+//  * A requires expression
+// All constraints can also be used whether a Boolean expression can be used
+// (especially as an if constexpr condition).
+
+template <typename T>
+requires (sizeof(T) > 4)                          // ad-hoc Boolean expression
+          && requires { typename T::value_type; } // requires expression
+          && std::input_iterator<T>               // concept
+void foo(T x)
+{}
+
 }
