@@ -951,6 +951,8 @@ void concepts_indirect_subsumption_test() {
 //  * The concept copyable is defined in terms of the concept swappable. (It
 //    implies movable, which implies swappable.)
 
+// To avoid confusion, do not make too many assumptions about concepts subsuming
+// each other. When in doubt, specify all the concepts you require.
 } // namespace concept_subsuming_test
 
 TEST(concept_test, indirect_subsumption_test) {
@@ -971,3 +973,48 @@ TEST(concept_test, indirect_subsumption_test) {
 
   EXPECT_EQ(oss.str(), act_output);
 }
+
+namespace commutative_concepts_test {
+
+template <typename T, typename U>
+concept SameAs = std::is_same_v<T, U>;
+
+template <typename T, typename U>
+  requires SameAs<T, U>
+void foo(T, U) {
+  std::cout << "foo() for parameters of same type" << '\n';
+}
+
+template <typename T, typename U>
+  requires SameAs<T, U> && std::integral<T>
+void foo(T, U) {
+  std::cout << "foo() for integral parameters of same type" << '\n';
+}
+
+// foo(1, 2) // OK: second foo() preferred
+
+#if 0
+template <typename T, typename U>
+requires SameAs<U, T> && std::integral<T>
+void foo(T, U) {
+  std::cout << "foo() for integral parameters of same type" << '\n';
+}
+#endif
+
+// foo(1, 2); // ERROR: ambiguity: both constraints are satisfied without one
+// subsuming the other.
+
+// The problem is that the compiler cannot detect the SameAs<> is commutative.
+// For the compiler, the order of the template parameters matters, and
+// therefore, the first requirement is not necessarily a subset of the second
+// requirement. To solve this problem, we have to design the concept SameAs in a
+// way that the order of the arguments does not matter. This requires a helper
+// concept:
+template <typename T, typename U>
+concept SameAsHelper = std::is_same_v<T, U>;
+
+template <typename T, typename U>
+concept SameAsCommutative =
+    SameAsHelper<T, U> && SameAsHelper<U, T>; // make commutative
+
+} // namespace commutative_concepts_test
