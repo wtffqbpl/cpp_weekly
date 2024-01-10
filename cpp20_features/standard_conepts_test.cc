@@ -1,9 +1,15 @@
 #include <gtest/gtest.h>
 
 #include <concepts>
-#include <format>
 
 #include "internal_check_conds.h"
+
+// format feature checking
+#define __support_format __has_include(<format>)
+
+#if __support_format
+#include <format>
+#endif
 
 namespace {
 
@@ -28,6 +34,7 @@ struct S {
 auto val = std::invocable<decltype(&S::member), S>;
 
 void callable_test() {
+#if __support_format
   std::cout << std::format("std::invocable<decltype(callable_test)> = {}\n",
                            std::invocable<decltype(callable_test)>);
 
@@ -39,6 +46,20 @@ void callable_test() {
 
   std::cout << std::format("std::invocable<decltype(&S::member), S> = {}\n",
                            std::invocable<decltype(&S::member), S>);
+#else
+  std::cout << std::boolalpha;
+  std::cout << "std::invocable<decltype(callable_test)> = "
+            << std::invocable<decltype(callable_test)> << '\n';
+
+  std::cout << "std::invocable<decltype([](int){}), char> = "
+            << std::invocable<decltype([](int) {}), char> << '\n';
+
+  std::cout << "std::invocable<decltype(&S::mfunc), S, int> = "
+            << std::invocable<decltype(&S::mfunc), S, int> << '\n';
+
+  std::cout << "std::invocable<decltype(&S::member), S> = "
+            << std::invocable<decltype(&S::member), S> << '\n';
+#endif
   // FIXME: Explain why std::invocable<decltype(&S::member), S> is true.
   // std::invocable is a concept in C++ that checks whether a type can be
   // invoked like a function.
@@ -66,8 +87,12 @@ void callable_test() {
   // member using a syntax similar to function calls, making it compatible with
   // concepts like `std::invocable`.
 
+#if __support_format
   std::cout << std::format("std::invocable<S, int> = {}\n",
                            std::invocable<S, int>);
+#else
+  std::cout << "std::invocable<S, int> = " << std::invocable<S, int> << '\n';
+#endif
 }
 
 // std::indirectly_unary_invocable

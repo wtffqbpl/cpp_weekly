@@ -7,11 +7,12 @@
 #include <ranges>
 #include <string>
 #include <vector>
+#include <version>
 
 #include "internal_check_conds.h"
 
 // C++20 provides a new way to deal with ranges. it provides support for
-// defining and using ranges and subranges as single objects, such as passing
+// defining and using ranges and sub-ranges as single objects, such as passing
 // them as a whole as single arguments instead of dealing with two iterators.
 // C++20 provides several new features and utilities for dealing with ranges:
 //  * New overloads or variations of standard algorithms that take a range as a
@@ -260,6 +261,42 @@ void test5() {
   using value_type = typename decltype(coll)::value_type;
   std::ranges::copy(coll, std::ostream_iterator<value_type>(std::cout, ", "));
   std::cout << '\n';
+
+  // Lazy Evaluation
+  // Besides having reference semantics, views use lazy evaluation. This means that views do their
+  // processing for the next element when an iterator to the view calls begin() or ++ or the value
+  // of the element is requested:
+  auto v = coll | std::views::take(5); // Neither goes to the first element nor to its value
+  // ...
+  auto pos = v.begin(); // goes to the first element
+  // ...
+  std::cout << *pos; // goes to its value
+  // ...
+  ++pos; // goes to the next element
+  // ...
+  std::cout << *pos; // goes to its value
+
+  // In addition, some views use caching. If going to the first element of a view with begin() needs
+  // some computation (because we skip leading elements), a view might cache the return value of
+  // begin() so that the next time we call begin(), we do not have to compute the position of the
+  // first element again.
+  // FIXME: Some questions
+  //  * Which views could use cache?
+  //  * How to enable caching for specified views?
+  //  * How to disable caching for specified views?
+
+  // However, this optimization has significant consequences:
+  //  * You might not be able to iterate over views when they are const.
+  //  * Concurrent iterations can cause undefined behavior even if we do not modify anything.
+  //  * Early read access might invalidate or change the later iterations over elements of views.
+  //
+  // FIXME: NOTE THAT THE STANDARD VIEWS ARE CONSIDERED HARMFUL WHEN MODIFICATIONS HAPPEN:
+  //  * INSERTING OR REMOVING ELEMENTS IN THE UNDERLYING RANGE MAY HAVE SIGNIFICANT IMPACT ON THE
+  //    FUNCTIONALITY OF A VIEW. AFTER SUCH MODIFICATION, A VIEW MIGHT BEHAVE DIFFERENTLY OR EVEN
+  //    NO LONGER BE VALID.
+  //    THEREFOR, IT IS STRONGLY RECOMMENDED TO USE VIEWS RIGHT BEFORE YOU NEED THEM. CREATE VIEWS
+  //    TO USE THEM AD HOC. IF MODIFICATIONS HAPPEN BETWEEN INITIALIZING A VIEW AND USING IT, CARE
+  //    HAS TO BE TAKEN.
 }
 
 } // namespace views_test
@@ -316,4 +353,92 @@ TEST(range_view_test, view_test3) {
 #endif
 
   EXPECT_EQ(oss.str(), act_output);
+}
+
+namespace sentinels_test {
+
+// sentinels: It represents the end of the range. In programming, a sentinel is a special value that
+//  marks an end or termination. Typical examples are:
+//  * The null terminator '\0' as the end of a character sequence.
+//  * nullptr marking the end of a linked-list.
+//  * -1 to mark the end of a list of non-negative integers.
+// In the ranges library, sentinels define the end of a range. In the traditional approach of the
+// STL, sentinels would be the end iterators, which usually have the same type as the iterators that
+// iterate over a collection. However, with C++20 ranges, having the same type is no longer
+// required.
+
+//  The requirement that end iterators have to have the same type as the iterators that define the
+//  beginning of a range and that are used to iterate over the elements causes some drawbacks.
+//  Creating an end iterator may be expensive or might not even be possible:
+//  * If we want to use a C string or string literal as a range, we first have to compute the end
+//    iterator by iterating over the characters until we find '\0'. Thus, before we use the string
+//    as a range, we have already done the first iteration. Dealing then with all the characters
+//    would need a second iteration.
+//  * In general, this principle applies if we defined the end of a range with a certain value. If
+//    we need an end iterator to deal with the range, we first have to iterate over the whole range
+//    to find its end.
+//  * Sometimes, iterating twice (once to find the end and then once to process the elements of the
+//    range) is not possible. This applies to ranges that use pure input iterators, such as using
+//    input streams that we read from as ranges. To compute the end of the input (maybe EOF), we
+//    already have to read the input. Reading the input again is not possible or will yield
+//    different values.
+//  The generalization of end iterators as sentinels solves this dilemma. C++20 ranges support
+//  sentinels (end iterators) of different types. They can signal "until '\0'", "until EOF", or
+//  until any other value. They can even signal "there is no end" to define endless ranges and "hey,
+//  iterating iterator, check yourself whether there is the end."
+
+// By relaxing the requirement that sentinels (end iterators) now have to have the same type as
+// iterating iterators, we gain a couple of benefits:
+//  * We can skip the need to find the end before we start to process. We do both together: process
+//    the values and find the end while iterating.
+//  * For the end iterator, we can use types that disable operations that cause undefined behavior
+//    (such as calling the operator*, because there is no value at the end). We can use this feature
+//    signal an error at compile time when we try to dereference an end iterator.
+//  * Defining an end iterator becomes easier.
+
+struct NullTerm {
+  bool operator==(auto pos) const {
+    return *pos == '\n'; // end is where iterator points to '\0'
+  }
+};
+
+void test1() {
+  const char *raw_str = "hello world";
+
+  // iterate over the range of the beginning of raw_str and its end:
+  for (auto pos = raw_str; pos != NullTerm{}; ++pos) {
+    std::cout << ' ' << *pos;
+  }
+  std::cout << '\n';
+
+  // call range algorithm with iterator and sentinel:
+  std::ranges::for_each(raw_str,    // begin of range
+                        NullTerm{}, // end is null terminator
+                        [](char c) { std::cout << ' ' << c; });
+  std::cout << '\n';
+}
+} // namespace sentinels_test
+
+TEST(range_view_test, sentinels_test1) {
+  std::stringstream oss;
+
+  bool val = false;
+#ifdef __cpp_lib_format
+  val = true;
+#endif
+
+  std::cout << "val = " << std::boolalpha << val << std::endl;
+
+  testing::internal::CaptureStdout();
+
+  sentinels_test::test1();
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  // FIXME: Currently we don't want to check this result.
+  // EXPECT_EQ(oss.str(), act_output);
 }
