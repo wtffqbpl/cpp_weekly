@@ -230,6 +230,38 @@ void test3() {
   }
 }
 
+// Views can also generate a sequence of values themselves.
+
+void test4() {
+  for (auto val : std::views::iota(1, 11)) {
+    std::cout << val << ", ";
+  }
+  std::cout << '\n';
+}
+
+// Views on lvalues usually have reference semantics. This means that, in
+// principle, views can be used for both reading and writing.
+
+void test5() {
+  std::vector coll{4, 3, 2, 1, 1, 2, 3, 4, 5, 4, 3, 2, 1};
+
+  // Only sort the first five elements of coll as follows.
+  std::ranges::sort(std::views::take(coll, 5));
+
+  // or as follows:
+  std::ranges::sort(coll | std::views::take(5));
+
+  // clang-format off
+  // This means that usually:
+  //  * If elements of the referred range are modified, the elements of the view were modified.
+  //  * If elements of the view are modified, the elements of the referred range were modified.
+  // clang-format on
+
+  using value_type = typename decltype(coll)::value_type;
+  std::ranges::copy(coll, std::ostream_iterator<value_type>(std::cout, ", "));
+  std::cout << '\n';
+}
+
 } // namespace views_test
 
 TEST(range_view_test, view_test1) {
@@ -266,5 +298,22 @@ TEST(range_view_test, view_test2) {
 #ifndef NDEBUG
   debug_msg(oss, act_output);
 #endif
+  EXPECT_EQ(oss.str(), act_output);
+}
+
+TEST(range_view_test, view_test3) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  views_test::test5();
+
+  oss << "1, 1, 2, 3, 4, 2, 3, 4, 5, 4, 3, 2, 1, \n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
   EXPECT_EQ(oss.str(), act_output);
 }

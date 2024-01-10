@@ -1,0 +1,11 @@
+.DS_Store
+.cache
+.idea
+*build*
+compile_commands.json
+conanfile.txt
+node_modules
+package-lock.json
+package.json
+
+
