@@ -5,9 +5,7 @@
 #include "internal_check_conds.h"
 
 // format feature checking
-#define __support_format __has_include(<format>)
-
-#if __support_format
+#if support_format
 #include <format>
 #endif
 
@@ -34,7 +32,7 @@ struct S {
 auto val = std::invocable<decltype(&S::member), S>;
 
 void callable_test() {
-#if __support_format
+#if support_format
   std::cout << std::format("std::invocable<decltype(callable_test)> = {}\n",
                            std::invocable<decltype(callable_test)>);
 
@@ -87,7 +85,7 @@ void callable_test() {
   // member using a syntax similar to function calls, making it compatible with
   // concepts like `std::invocable`.
 
-#if __support_format
+#if support_format
   std::cout << std::format("std::invocable<S, int> = {}\n",
                            std::invocable<S, int>);
 #else

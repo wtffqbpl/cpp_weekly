@@ -12,3 +12,6 @@ static inline void debug_msg(const std::stringstream &oss,
             << act_output << '\n';
 #endif
 }
+
+// C++ feature macros for different platforms
+#define support_format __has_include(<format>)

@@ -11,6 +11,10 @@
 
 #include "internal_check_conds.h"
 
+#if support_format
+#include <format>
+#endif
+
 // C++20 provides a new way to deal with ranges. it provides support for
 // defining and using ranges and sub-ranges as single objects, such as passing
 // them as a whole as single arguments instead of dealing with two iterators.
@@ -760,3 +764,92 @@ TEST(range_view_test, projection_test3) {
 
   EXPECT_EQ(oss.str(), act_output);
 }
+
+namespace ranges_utilities_test {
+// To make it easy to program against all the different kinds of ranges, the ranges library provides
+// the following utilities:
+//  * Generic functions that, for example, yield iterators or the size of a range.
+//  * Type functions that, for example, yield the type of iterator or the type of the element.
+
+// Assume that we want to implement an algorithm that yields the maximum value in a range:
+template <std::ranges::input_range Range>
+std::ranges::range_value_t<Range> max_value(const Range &rg) {
+  if (std::ranges::empty(rg))
+    return std::ranges::range_value_t<Range>{};
+
+  auto pos = std::ranges::begin(rg);
+  auto max = *pos;
+  while (++pos != std::ranges::end(rg)) {
+    if (*pos > max)
+      max = *pos;
+  }
+  return max;
+}
+
+void test1() {
+  std::vector coll{3, 2, 1, 0, 4, 3, 2, 1, 0, 5, 4, 3, 2, 1, 0};
+
+  auto max_val = max_value(coll);
+
+#if support_format
+  std::cout << std::format("Max value = {}\n", max_val);
+#else
+  std::cout << "Max value = " << max_val << '\n';
+#endif
+}
+
+}
+
+TEST(range_view_test, range_utilities_test1) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  ranges_utilities_test::test1();
+
+  oss << "Max value = 5\n";
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_EQ(oss.str(), act_output);
+}
+
+// Limitations and Drawbacks of Ranges
+// In C++20, ranges also have some major limitations and drawbacks that should be mentioned in a
+// general introduction to them:
+//
+//  * There is no ranges support for numeric algorithms yet. To pass a range to a numeric algorithm,
+//    you have to pass `begin()` and `end()` explicitly.
+//    std::accumulate(coll.begin(), coll.end(), 0L);
+//
+//  * There is no support for ranges for parallel algorithms yet.
+//    std::sort(std::execution::par, coll.begin(), coll.end()); // OK
+//
+//  * Several traditional APIs for ranges defined by a `begin` iterator and an `end` iterator
+//    require that the iterators have the same type (e.g., this applies to containers and the
+//    algorithms in the namespace std). You might have to harmonize their types with
+//    `std::views::common()` or `std::common_iterator`.
+//
+//  * `cbegin()` and `cend()` functions, which were designed to ensure that you cannot
+//    (accidentally) modify the element you iterate over, are broken for views that refer to
+//    non-const objects.
+//
+//  * When views refer to containers, their propagation of constness may be broken.
+//
+//  * Ranges lead to a significant namespace mess. For example, look at the following declaration
+//    of std::find() but with all standard names fully qualified:
+template <std::ranges::input_range Rg,
+          typename T,
+          typename Proj = std::identity>
+requires std::indirect_binary_predicate<std::ranges::equal_to,
+                                        std::projected<std::ranges::iterator_t<Rg>, Proj>,
+                                        const T*>
+constexpr std::ranges::borrowed_iterator_t<Rg>
+find_impl(Rg &&rg, const T &value, Proj proj = {});
+// It is really not easy to know which namespace has to be used where.
+// In addition, we have some symbols in both the namespace `std` and the namespace `std::ranges`
+// with slightly different behavior. In the declaration above, `equal_to` is such an example. You
+// could also use `std::equal_to`, but in general, utilities in `std::ranges` provide better support
+// and are more robust for corner cases.

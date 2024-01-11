@@ -42,7 +42,7 @@ void latch_basic_test() {
   }};
 
   // wait until all tasks are done:
-  std::cout << "\nwaiting untill all tasks are done\n";
+  std::cout << "\nwaiting until all tasks are done\n";
   all_done.wait(); // wait until counter of latch is zero
   std::cout << "\nall tasks done\n"; // note: threads might still run
 
