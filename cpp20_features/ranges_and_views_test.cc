@@ -344,7 +344,8 @@ TEST(range_view_test, view_test3) {
 
   views_test::test5();
 
-  oss << "1, 1, 2, 3, 4, 2, 3, 4, 5, 4, 3, 2, 1, \n";
+  oss << "1, 1, 2, 3, 4, 2, 3, 4, 5, 4, 3, 2, 1, \n"
+         "11";
 
   auto act_output = testing::internal::GetCapturedStdout();
 
@@ -398,8 +399,15 @@ namespace sentinels_test {
 
 struct NullTerm {
   bool operator==(auto pos) const {
-    return *pos == '\n'; // end is where iterator points to '\0'
+    return *pos == '\0'; // end is where iterator points to '\0'
   }
+
+  // FIXME: When we define an operator!= with auto specifier, then we'll meet compile error. Please
+  //        Find why occurs this error.
+  // bool operator!=(const T &pos) const { return *pos != '\0'; }
+  // The following operator!= is correct, that wierd
+  // template <typename T>
+  // bool operator!=(const T &pos) const { return *pos != '\0'; }
 };
 
 void test1() {
@@ -416,22 +424,104 @@ void test1() {
                         NullTerm{}, // end is null terminator
                         [](char c) { std::cout << ' ' << c; });
   std::cout << '\n';
+
+  // There is a concepts restraints for last
+  // [iterator.concept.sentinel]
+  // template<class _Sp, class _Ip>
+  // concept sentinel_for =
+  //   semiregular<_Sp> &&
+  //   input_or_output_iterator<_Ip> &&
+  //   __weakly_equality_comparable_with<_Sp, _Ip>;
+  //
+  // The definition of std::ranges::for_each may like this:
+  // template <input_iterator _Iter,
+  //           sentinel_for<_Iter> _Sent,
+  //           class _Proj = identity,
+  //           indirectly_unary_invocable<projected<_Iter, _Proj>> _Func>
+  // constexpr for_each_result<_Iter, _Func>
+  // for_each(_Iter __first, _Sent __last, _Func __func, _Proj __proj = {}) const {
+  //  // ...
+  // }
 }
+
+// Range Definitions with Sentinels and Counts
+// Ranges can be more than just containers or a pair of iterators. Ranges can be defined by:
+//  * A begin iterator and an end iterator of the same type.
+//  * A begin iterator and a sentinel (an end marker of maybe a different type).
+//  * A begin iterator and a count.
+//  * Array
+//
+// In addition, there are several utilities for defining ranges defined by iterators and sentinels
+// or counts, and these are introduced in the following subsections.
+
+// Sub-ranges
+// To define ranges of iterators and sentinels, the ranges library provides type
+// std::ranges::subrange<>.
+// A sub-range is the generic type that can be used to convert a range defined by an iterator and a
+// sentinel into a single object that represents this range. In fact, the range is even a view,
+// which internally, just stores the iterator and the sentinel. This means that sub-ranges have
+// reference semantics and are cheap to copy.
+// Note that sub-ranges are not always `common ranges`, meaning that calling `begin()` and `end()`
+// for them may yield different types. Sub-ranges just yield what was passed to define the range.
+void subrange_test() {
+  const char *raw_str = "hello world";
+
+  // define a range of a raw string and a null terminator:
+  std::ranges::subrange raw_str_range{raw_str, NullTerm{}};
+
+  // use the range in an algorithm:
+  std::ranges::for_each(raw_str_range, [](char c) { std::cout << ' ' << c; });
+  std::cout << '\n';
+
+  // range-based for loop also supports iterator/sentinel:
+  for (char c : raw_str_range) {
+    std::cout << ' ' << c;
+  }
+  std::cout << std::endl;
+
+  // use std::ranges::copy
+  std::ranges::copy(raw_str_range, std::ostream_iterator<char>(std::cout, " "));
+  std::cout << '\n';
+}
+
+// We can make this approach even more generic by defining a class template where you can specify
+// the value that ends a range.
+template <auto End> struct EndValue {
+  bool operator==(auto pos) const {
+    return *pos == End; // end is where iterator points to End.
+  }
+};
+
+void generic_sentinel_test() {
+
+  std::vector coll = {42, 8, 0, 15, 7, -1};
+
+  // define a range referring to coll with the value 7 as end:
+  std::ranges::subrange range{coll.begin(), EndValue<7>{}};
+
+  // sort the elements of this range
+  std::ranges::sort(range);
+
+  // print the elements of the range:
+  std::ranges::for_each(range, [](auto val) { std::cout << ' ' << val; });
+  std::cout << '\n';
+
+  // print all elements of coll up to -1:
+  std::ranges::for_each(coll.begin(), EndValue<-1>{}, [](auto val) { std::cout << ' ' << val; });
+  std::cout << '\n';
+}
+
 } // namespace sentinels_test
 
 TEST(range_view_test, sentinels_test1) {
   std::stringstream oss;
 
-  bool val = false;
-#ifdef __cpp_lib_format
-  val = true;
-#endif
-
-  std::cout << "val = " << std::boolalpha << val << std::endl;
-
   testing::internal::CaptureStdout();
 
   sentinels_test::test1();
+
+  oss << " h e l l o   w o r l d\n"
+         " h e l l o   w o r l d\n";
 
   auto act_output = testing::internal::GetCapturedStdout();
 
@@ -439,6 +529,41 @@ TEST(range_view_test, sentinels_test1) {
   debug_msg(oss, act_output);
 #endif
 
-  // FIXME: Currently we don't want to check this result.
-  // EXPECT_EQ(oss.str(), act_output);
+  EXPECT_EQ(oss.str(), act_output);
+}
+
+TEST(range_view_test, sentinels_test2) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  sentinels_test::subrange_test();
+
+  oss << " h e l l o   w o r l d\n"
+         " h e l l o   w o r l d\n"
+         "h e l l o   w o r l d \n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_EQ(oss.str(), act_output);
+}
+
+TEST(range_view_test, sentinels_test3) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  sentinels_test::generic_sentinel_test();
+  oss << " 0 8 15 42\n"
+         " 0 8 15 42 7\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_EQ(oss.str(), act_output);
 }
