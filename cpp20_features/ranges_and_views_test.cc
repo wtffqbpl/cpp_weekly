@@ -511,6 +511,32 @@ void generic_sentinel_test() {
   std::cout << '\n';
 }
 
+// Ranges of Begin and a Count
+// The ranges library provides multiple ways of dealing with ranges defined as beginning and  count.
+// The most convenient way to create a range with a begin iterator and a count is to use the range
+// adaptor `std::views::counted()`. It creates a cheap view to the first n elements of a begin
+// iterator/pointer.
+void sentinels_begin_count_creation_test() {
+  std::vector coll{1, 2, 3, 4, 5, 6, 7, 8, 9};
+
+  auto pos = std::ranges::find(coll, 5);
+  if (std::ranges::distance(pos, coll.end()) >= 3) {
+    for (auto val : std::views::counted(pos, 3)) {
+      std::cout << val << ' ';
+    }
+  }
+
+  // std::views::counted(pos, 3): indicates a range which starts from pos, and there are 3 elements.
+  // Note that counted() does not check whether there are elements, it is up to the programmer to
+  // ensure that the code is valid. Therefore, with `std::views::distance()` , we can check whether
+  // there are enough elements.
+  // NOTE: THAT THIS CHECK CAN BE EXPENSIVE IF YOUR COLLECTION DOES NOT HAVE RANDOM-ACCESS ITERATORS.
+  // for std::views::counted, the count may be 0, which means that the range is empty.
+  // Note that you should use std::views::counted() only when you really have an iterator and a
+  // count. If you already have a range and want to deal with the first n elements only, use
+  // std::views:take().
+}
+
 } // namespace sentinels_test
 
 TEST(range_view_test, sentinels_test1) {
@@ -558,6 +584,173 @@ TEST(range_view_test, sentinels_test3) {
   sentinels_test::generic_sentinel_test();
   oss << " 0 8 15 42\n"
          " 0 8 15 42 7\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_EQ(oss.str(), act_output);
+}
+
+TEST(range_view_test, sentinels_test4) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  sentinels_test::sentinels_begin_count_creation_test();
+
+  oss << "5 6 7 ";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_EQ(oss.str(), act_output);
+}
+
+namespace projections_test {
+// Many algorithms for ranges usually have an additional optional template parameter, a projection.
+// The optional additional parameter allows you to specify a transformation (projection) for each
+// element before the algorithm processes it further.
+// For example:
+template <std::ranges::random_access_range R,
+          typename Comp = std::ranges::less,
+          typename Proj = std::identity>
+requires std::sortable<std::ranges::iterator_t<R>, Comp, Proj>
+void sort_impl(R&& r, Comp comp = {}, Proj proj = {});
+
+void basic_proj_test() {
+  std::vector coll{1, -1, 2, -2, 3, -3, 4, -4, 5, -5};
+  std::ranges::reverse(coll);
+  std::ranges::sort(coll, std::ranges::less{}, [] (auto val) { return std::abs(val); });
+
+  std::ranges::for_each(coll, [](auto val) { std::cout << val << ' '; });
+  std::cout << '\n';
+}
+
+// User-defined projections simply have to take one parameter and return a value for the transformed
+// parameters.
+// Projections in C++ ranges algorithms provide a way to transform and extract specific elements
+// from the input range before applying the algorithm. A projection is essentially a function or
+// functor that, when applied to an element in the range, transforms it into a value that is then
+// used by the algorithm for comparison, modification, or other purposes.
+// Projections are often used in algorithms that require comparing or operating on specific
+// properties of elements rather then the elements themselves. Projections are especially useful
+// when working with structures or complex types where you want to focus on a particular field or
+// property.
+// Projections are commonly used in various algorithms like `std::ranges::sort`,
+// `std::ranges::max_element`, `std::ranges::min_element`, and others. They provide a flexible way
+// to customize the behavior of algorithms based on specific properties of the elements.
+// The use of projections enhances code expressiveness and allows for more concise and readable
+// code when working with complex data structures or when focusing on specific attributes of the
+// elements in a range.
+
+struct Person {
+  std::string name;
+  int age;
+};
+
+void test2() {
+  std::vector<Person> people = {{"Alice", 25}, {"Bob", 30}, {"Charlie", 20}};
+
+  // Using a projection to sort based on age
+  // std::ranges::sort(people, [](const Person &p1, const Person &p2) { return p1.age < p2.age; });
+  // std::ranges::sort(people, std::ranges::less{}, [](const Person &person) { return person.age; });
+  std::ranges::sort(people, {}, [](const Person &person) { return person.age; });
+  // The second argument `{}` represents an empty comparator, allowing the default comparator
+  // (`operator<`) to be used for the sorting based on the projected values.
+
+  // Display the sorted result
+  for (const auto &person : people) {
+    std::cout << person.name << " - " << person.age << " years old." << std::endl;
+  }
+}
+
+// Projections in std::ranges Algorithms
+// Purpose:
+//  * Projections provide a way to selectively access or modify specific parts of elements within
+//    a range during algorithm operations.
+//  * They enable algorithms to work with particular properties of elements, rather than always
+//    using the elements themselves directly.
+
+// Mechanism:
+//  * Function objects: Projections are typically implemented using function objects (functors) that
+//    take an element as input and return the desired property or a modified version of it.
+//  * Algorithm as an argument: Many `std::ranges` algorithms accept a projection as an optional
+//    argument.
+//
+// Benefits of Projections:
+//  * Flexibility: Customize algorithm behavior without modifying element types.
+//  * Performance: Can potentially improve performance by avoiding unnecessary data copies.
+//  * Readability: Make code more expressive by focusing on relevant properties.
+//  * Genericity: Write algorithms that work with different properties without code duplication.
+//
+// Key Points:
+//  * Projections are a powerful tool for customizing and optimizing algorithm operations in
+//    std::ranges.
+//  * They enhance code clarity, usability, and adaptability.
+//  * Consider using projections whenever you need to work with specific aspects of elements
+//    within ranges.
+
+void test3() {
+  std::vector numbers{1, 2, 3, 4};
+
+  // Square each number using a projection.
+  std::ranges::transform(numbers, numbers.begin(), [](auto x) { return x * x; });
+
+  // Output
+  std::ranges::for_each(numbers, [](auto x) { std::cout << x << ' '; });
+  std::cout << '\n';
+}
+
+}
+
+TEST(range_view_test, projection_test1) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  projections_test::basic_proj_test();
+
+  oss << "-1 1 -2 2 -3 3 -4 4 -5 5 \n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_EQ(oss.str(), act_output);
+}
+
+TEST(range_view_test, projection_test2) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  projections_test::test2();
+
+  oss << "Charlie - 20 years old.\n"
+         "Alice - 25 years old.\n"
+         "Bob - 30 years old.\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_EQ(oss.str(), act_output);
+}
+
+TEST(range_view_test, projection_test3) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  projections_test::test3();
+
+  oss << "1 4 9 16 \n";
 
   auto act_output = testing::internal::GetCapturedStdout();
 
