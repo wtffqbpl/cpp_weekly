@@ -69,6 +69,24 @@ template <typename Coll> void print(const Coll &coll) {
   std::cout << '\n';
 }
 
+// The view concept specifies the requirements ofa range type that has constant time move
+// construction, move assignment, and destruction; that is, the cost of these operations is
+// independent of the number of elements in the view.
+template <typename T>
+concept view_impl = std::ranges::range<T> && std::movable<T> && std::default_initializable<T> &&
+                    std::ranges::enable_view<T>;
+// T models view only if:
+//  - T has O(1) move construction; and
+//  - T has O(1) move assignment; and
+//  - T has O(1) destruction; and
+//  - copy_constructible<T> is false, or T has O(1) copy construction; and
+//  - copyable<T> is false, or T has O(1) copy assignment
+
+template <std::ranges::view Coll> void print(Coll &coll) {
+  std::ranges::for_each(coll, [](const auto &val) { std::cout << val << ", "; });
+  std::cout << '\n';
+}
+
 template <typename Coll>
   requires requires { Coll::value_type; }
 void print(const Coll &coll) {
@@ -853,3 +871,392 @@ find_impl(Rg &&rg, const T &value, Proj proj = {});
 // with slightly different behavior. In the declaration above, `equal_to` is such an example. You
 // could also use `std::equal_to`, but in general, utilities in `std::ranges` provide better support
 // and are more robust for corner cases.
+
+namespace borrowed_iterator_test {
+// A borrowed iterator ensures that its lifetime does not depend on a temporary object that might
+// have been destroyed. If it does, using it results in a compile-time error. Thus, a borrowed
+// iterator signals whether it can safely outlive the passed range, which is the case if the range
+// was not temporary or the state of the iterator does not depend on the state of the passed range.
+// If you have a borrowed iterator that refers to a range, the iterator is safe to use and does not
+// dangle even when the range is destroyed.
+//
+// By using type `std::ranges::borrowed_iterator_t<>`, algorithms can declare the returned iterator
+// as borrowed. This means that the algorithm always returns an iterator that is safe to use after
+// the statement. If it could dangle, s special return value is used to signal this and convert
+// possible runtime errors into compile-time errors.
+
+template <std::ranges::input_range Rg, typename T, typename Proj = std::identity>
+constexpr std::ranges::borrowed_iterator_t<Rg> find_impl(Rg &&r, const T &value, Proj proj = {});
+
+// By specifying the return type as std::ranges::borrowed_iterator_t<> of Rg, the standard enables a
+// compile-time check: if the range R passed to the algorithm is a temporary object (a prvalue), the
+// return type becomes a dangling iterator. In that case, the return value is an object of type
+// `std::ranges::dangling`. Any use of such an object (except copying and assignment) results in a
+// compile-time error.
+
+// There are two kinds of references you can use here:
+// * You can declare a const lvalue reference:
+/// \code
+/// std::vector<int> getData(); // forward declaration
+///
+/// const auto& data = getData();           // give return value a name to use it as an lvalue
+/// auto pos = std::ranges::find(data, 42); // yields no dangling iterator
+/// if (pos != data.end()) {
+///   std::cout << *pos;
+/// }
+/// \endcode
+// This reference makes the return value const, which might not be what you want (note that you
+// cannot iterate over some views when they are const; although, due to the reference semantics of
+// views, you have to be careful when returning them).
+
+// In more generic code, you should use a universal reference (also called a forwarding reference)
+// or decltype(auto) so that you keep the natural non-constness of the return value:
+/// \code
+/// ... getData(); // forward declaration
+/// auto&& data = getData(); // give return value a name to use it as an lvalue
+/// auto pos = std::ranges::find(data, 42); // yields no dangling iterator
+/// if (pos != data.end())
+///   std::cout << *pos;
+/// \endcode
+
+// The consequence of this feature is that you cannot pass a temporary object to an algorithm even
+// if the resulting code would be valid:
+// process(std::ranges::find(getData(), 42)); // compile-time ERROR
+// Again, the best way to deal with this issue is to declare a reference for the return value of
+// getData().
+//  * Using a const lvalue reference:
+/// \code
+/// const auto& data = getData();           // give return value a name to use it as an lvalue
+/// process(std::ranges::find(data, 42));   // passes a valid iterator to process().
+/// \endcode
+//
+//  * Using a universal/forwarding reference:
+/// \code
+/// auto&& data = getData();                // give return value a name to use it as an lvalue
+/// process(std::ranges::find(data, 42));   // passes a valid iterator to process()
+/// \endcode
+} // namespace borrowed_iterator_test
+
+namespace using_views_test {
+
+// Views
+// As introduced, views are lightweight ranges that can be used as building blocks to deal with the
+// (modified) values of all or some elements of other ranges and views.
+// C++20 provides several standard views. They can be used to convert a range into a view or yield
+// a view to range/view where the elements are modified in various ways:
+//  * Filter out elements
+//  * Yield transformed values of elements
+//  * Change the order of iterating over elements
+//  * Split or merge ranges
+//
+// clang-format off
+//    Source views
+// --------------------------------------------------------------------------------------------------------------------------------------------------
+// | Adaptor Factory    | Type                    | Effect                                                                                          |
+// |--------------------+-------------------------+-------------------------------------------------------------------------------------------------|
+// | all(rg)            | Varies:                 | Yields range rg as a view                                                                       |
+// | all(rg)            |   type of rg            |   - Yields rg if it is already a view                                                           |
+// | all(rg)            |   ref_view              |   - Yields a ref_view if rg is an lvalue                                                        |
+// | all(rg)            |   owning_view           |   - Yields an owning_view if rg is an rvalue.                                                   |
+// | counted(beg, sz)   | Varies:                 | Yields a view from a begin iterator and a count                                                 |
+// |                    |   std::span             |   - Yields a span if rg is contiguous and common                                                |
+// |                    |   subrange              |   - Yields a subrange otherwise (if valid)                                                      |
+// | iota(val)          | iota_view               | Yields an endless view with an incrementing sequence of views starting with val                 |
+// | iota(val, endVal)  | iota_view               | Yields a view with an incrementing sequence of values from val up to (but not including) endVal |
+// | single(val)        | single_view             | Yields a view with val as the only element                                                      |
+// | empty<T>           | empty_view              | Yields an empty view of elements of type T                                                      |
+// | -                  | basic_istream_view      | Yields a view that reads Ts from input stream s                                                 |
+// | istream<T>(s)      | istream_view            | Yields a view that reads Ts from char stream s                                                  |
+// | -                  | wistream_view           | Yields a view that reads Ts from wchar_t stream s                                               |
+// | -                  | std::basic_string_view  | Yields a read-only view to a character array                                                    |
+// | -                  | std::span               | Yields a view to elements in contiguous memory                                                  |
+// | -                  | subrange                | Yields a view for a begin iterator and a sentinel                                               |
+// |-------------------------------------------------------------------------------------------------------------------------------------------------
+// clang-format on
+
+// Views on Ranges
+// Containers and strings are not views. This is because they are not lightweight enough: they
+// provide no cheap copy constructors because they have to copy the elements. However, you can
+// easily use containers as views:
+//  * You can explicitly convert container to a view by passing it to the range adaptor
+//    std::views::all().
+//  * You can explicitly convert elements of a container to a view by passing a beginning iterator
+//    and an ending (sentinel) or a size to a std::ranges::subrange or std::views::counted().
+//  * You can implicitly convert a container to a view by passing it to one of the adapting views.
+//    These views usually take a container by converting it implicitly to a view.
+// Usually, the latter option is and should be used. There are multiple ways of implementing this
+// option. For example, you have the following options for passing a range coll to a take view:
+//  * You can pass the range as a parameter to the constructor of the view:
+//    std::ranges::take_view first4{coll, 4};
+//  * Uou can pass the range as a parameter to the corresponding adaptor:
+//    auto first4 = std::views::take(coll, 4);
+//  * You can pipe the range into the corresponding adaptor:
+//    auto first4 = coll | std::views::take(4);
+
+auto getColl() {
+  std::vector coll{1, 2, 3, 4, 5, 6, 7, 8, 9};
+  return std::move(coll);
+}
+
+void test1() {
+  std::vector coll{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+  auto print_range_value = [](auto rg) {
+    std::ranges::for_each(rg, [](const auto &val) { std::cout << val << ", "; });
+    std::cout << '\n';
+  };
+
+  auto coll_view = std::views::all(coll);
+  print_range_value(coll_view);
+
+  std::ranges::take_view first4_1{coll, 4};
+  print_range_value(first4_1);
+
+  auto first4_2 = std::views::take(coll, 4);
+  print_range_value(first4_2);
+
+  auto first4_3 = coll | std::views::take(4);
+  print_range_value(first4_3);
+
+  std::vector<std::string> coll_str{"just", "some", "strings", "to", "deal", "with"};
+
+  //  * If coll is already a view, take() just takes the view as it is.
+  //  * If coll is a container, take() uses a view to the container that is automatically created
+  //    with the adaptor std::views::all(). This adaptor yields a ref_view that refers to all
+  //    elements of the container if the container is passed by name (as an lvalue).
+  //  * If an rvalue is passed (a temporary range such a container returned by a function or a
+  //    container marked with std::move()), the range is moved into an owning_view, which that holds
+  //    a range of the passed type with all moved elements directly.
+
+  // iterates over a ref_view to coll_str
+  auto v1 = std::views::take(coll_str, 4);
+  print_range_value(v1);
+
+  // iterates over v1
+  auto v2 = std::views::take(v1, 2);
+  print_range_value(v2);
+
+  // iterates over an owning_view to a local vector<string>
+  auto &&v3 = std::views::take(std::move(coll_str), 4);
+  print_range_value(std::forward<decltype(v3)>(v3));
+
+  // Note that this behavior allows a range-based for-loop to iterate on temporary ranges:
+  for (const auto &elem : getColl() | std::views::take(5)) {
+    std::cout << "- " << elem << '\n';
+  }
+
+  for (const auto &elem : getColl() | std::views::take(5) | std::views::drop(2)) {
+    std::cout << "- " << elem << '\n';
+  }
+
+  // This is remarkable, because in general, it is a fatal runtime error to use a reference to a
+  // temporary as a collection a range-based for loop iterates over (a bug that C++ standards
+  // committee has not been willing to fix for years now). Because passing a temporary range object
+  // (rvalue) moves the range into an owning_view, the view does not refer to an external container
+  // and therefore there is no runtime error.
+}
+
+// Lazy Evaluation
+// It is important to understand when exactly views are processed. Views do not start processing
+// when they are defined; instead, they run on demand:
+//  * If we need the next element of a view, we compute which one it is by performing the necessary
+//    iteration(s).
+//  * If we need the value of an element of a view, we compute its value by performing the defined
+//    transformation(s).
+// A view is just the description of a processing. The processing is performed when we need the next
+// element or value.
+// This pull model has a big benefit: we do not process elements that we never need.
+// Another benefit of the pull model is that sequences or pipelines of views can even operate on
+// infinite ranges. We do not compute an unlimited number of values not knowing how many are used;
+// we compute as many values as requested by the user of the view.
+
+void test2() {
+  std::vector coll{8, 15, 7, 0, 9};
+
+  // define a view:
+  auto coll_view = coll | std::views::filter([](int i) {
+                     std::cout << " filter " << i << '\n';
+                     return i % 3 == 0;
+                   }) |
+                   std::views::transform([](int i) {
+                     std::cout << "  trans " << i << '\n';
+                     return -i;
+                   });
+
+  // and use it:
+  std::cout << "*** coll | filter | transform:\n";
+  for (const auto &val : coll_view) {
+    std::cout << "val: " << val << "\n\n";
+  }
+
+  std::cout << "pos = coll_view.begin():\n";
+  auto pos = coll_view.begin();
+  std::cout << "*pos:\n";
+  auto val = *pos;
+  std::cout << "val = " << val << "\n\n";
+
+  std::cout << "++pos:\n";
+  ++pos;
+  std::cout << "*pos:\n";
+  val = *pos;
+  std::cout << "val: " << val << "\n\n";
+
+  std::cout << "The second loop for coll_view:\n";
+  std::ranges::for_each(coll_view, [](const auto &val) { std::cout << val << ' '; });
+  std::cout << '\n';
+}
+
+// Caching in Views:
+// As you can see, when used for the second time, calling coll_view.begin() no longer tries to find
+// the first element because it was cached with the first iteration over the elements of the filter.
+// Note that this caching of begin() has good and bad and maybe unexpected consequences.
+// First, it is better to initialize a caching view once and use it twice:
+// better
+/// \code
+/// auto v1 = coll | std::views::drop(5);
+/// check(v1);
+/// process(v1);
+/// \endcode
+// than to initialize and use it twice:
+// worse:
+/// \code
+/// check(coll | std::views::drop(5));
+/// process(coll | std::views::drop(5));
+/// \endcode
+//
+void test3() {
+  // In addition, modifying leading elements of ranges (changing their value or inserting/deleting
+  // elements) may invalidate views if and only if begin() has already been called before the
+  // modification. This means:
+  //  * If we do not call begin() before a modification, the view is usually valid and works fine
+  //  when
+  //    we use it later:
+  std::list coll{1, 2, 3, 4, 5};
+  auto v = coll | std::views::drop(2);
+  coll.push_front(0); // coll is now: 0, 1, 2, 3, 4, 5
+  print(coll);
+
+  //  * However, if we do call begin() before the modification, we can easily get wrong elements.
+  std::list coll2{1, 2, 3, 4, 5};
+  auto v2 = coll2 | std::views::drop(2);
+  print(v2);
+  coll2.push_front(0); // coll2 is now: 0, 1, 2, 3, 4, 5
+  print(v2);
+
+  std::vector vec{1, 2, 3, 4};
+
+  auto bigger_than_2 = [](auto v) { return v > 2; };
+  auto v_vec = vec | std::views::filter(bigger_than_2);
+
+  print(v_vec); // OK 3 4
+
+  ++vec[1];
+  vec[2] = 0; // vec becomes 1 3 0 4
+
+  print(v_vec);
+}
+// Note that this means that an iteration, even if it only reads, may count as a write access.
+// Therefore, iterating over the elements of a view might invalidate a later use if its referred
+// range has been modified in the meantime.
+// The effect depends on when and how caching is done. See the remarks about caching views in their
+// specific sections:
+//  * Filter views, which cache begin() as an iterator or offset
+//  * Drop views, which cache begin() as an iterator or offset
+//  * Drop-while views, which cache begin() as an iterator offset
+//  * Reverse views, which cache begin() as an iterator or offset
+// Here, you see again that C++ cares about performance:
+//  * Caching at initialization time would have unnecessary performance cost if we never iterate
+//    over the elements of a view at all.
+//  * Not caching at all would have unnecessary performance cost if we iterate a second or more
+//    times over the elements of the view ( applying a reverse view over a drop-while view might
+//    even have quadratic complexity in some cases).
+// However, due to caching, using a view not ad hoc can have pretty surprising consequences. Care
+// must be taken when modifying ranges used by views.
+
+} // namespace using_views_test
+
+TEST(using_views_test, test1) {
+  using namespace using_views_test;
+
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  test1();
+
+  oss << "1, 2, 3, 4, 5, 6, 7, 8, 9, 10, \n"
+         "1, 2, 3, 4, \n"
+         "1, 2, 3, 4, \n"
+         "1, 2, 3, 4, \n"
+         "just, some, strings, to, \n"
+         "just, some, \n"
+         "just, some, strings, to, \n"
+         "- 1\n"
+         "- 2\n"
+         "- 3\n"
+         "- 4\n"
+         "- 5\n"
+         "- 3\n"
+         "- 4\n"
+         "- 5\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_EQ(oss.str(), act_output);
+}
+
+TEST(using_views_test, test2) {
+  std::stringstream oss;
+  testing::internal::CaptureStdout();
+
+  using_views_test::test2();
+
+  oss << "*** coll | filter | transform:\n"
+         " filter 8\n"
+         " filter 15\n"
+         "  trans 15\n"
+         "val: -15\n"
+         "\n"
+         " filter 7\n"
+         " filter 0\n"
+         "  trans 0\n"
+         "val: 0\n"
+         "\n"
+         " filter 9\n"
+         "  trans 9\n"
+         "val: -9\n"
+         "\n"
+         "pos = coll_view.begin():\n"
+         "*pos:\n"
+         "  trans 15\n"
+         "val = -15\n"
+         "\n"
+         "++pos:\n"
+         " filter 7\n"
+         " filter 0\n"
+         "*pos:\n"
+         "  trans 0\n"
+         "val: 0\n"
+         "\n"
+         "The second loop for coll_view:\n"
+         "  trans 15\n"
+         "-15  filter 7\n"
+         " filter 0\n"
+         "  trans 0\n"
+         "0  filter 9\n"
+         "  trans 9\n"
+         "-9 \n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  ASSERT_EQ(oss.str(), act_output);
+}
+
+TEST(using_views_test, test3) { using_views_test::test3(); }
