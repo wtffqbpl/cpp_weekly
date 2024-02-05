@@ -107,6 +107,7 @@ add_executable(cpp_weekly
         misc/if_switch_with_init.cc
         misc/structured_binding.cc
         misc/variadic_template_examples.cc
+        misc/getter_setter_impl.cc
 
         new_features/cpp_17/inline_variable/inline_variable_main.cc
         new_features/cpp_17/inline_variable/func.cc

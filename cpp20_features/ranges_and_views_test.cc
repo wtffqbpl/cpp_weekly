@@ -1172,6 +1172,8 @@ void test3() {
 //    even have quadratic complexity in some cases).
 // However, due to caching, using a view not ad hoc can have pretty surprising consequences. Care
 // must be taken when modifying ranges used by views.
+// As another consequence, caching might require that a view cannot be const while iterating over
+// its elements.
 
 } // namespace using_views_test
 
@@ -1260,3 +1262,23 @@ TEST(using_views_test, test2) {
 }
 
 TEST(using_views_test, test3) { using_views_test::test3(); }
+
+namespace views_on_ranges_test {
+
+// Views usually have reference semantics. Often, they refer to ranges that exist outside
+// themselves. This means that care must be taken because you can only use views as long as the
+// underlying ranges exist and references to them stored in the views or its iterators are valid.
+
+} // namespace views_on_ranges_test
+
+// const& does not work for all views.
+// The reason for this very strange and unexpected behavior is that some views do not always support
+// iterating over elements when the view is const. It is a consequence of the fact that iterating
+// over the elements of these views sometimes needs the ability to modify the state of the view.
+// In fact, you cannot iterate over the elements of the following standard views if they are
+// declared with const:
+//  * const views that you can never iterate over:
+//    - Filter view
+//    - Drop-while view
+//    - Split view
+//    - IStream view
