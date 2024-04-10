@@ -161,6 +161,7 @@ add_executable(cpp_weekly
         template/declval_test.cc
         template/miscs.cc
         template/variadic_class_inheritance_example.cc
+        template/irange_impl.cc
 
         topics/deep_vs_shallow/deep_vs_shallow_main.cc
         topics/memory_block_management/memory_block_management_main.cc
