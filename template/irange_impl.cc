@@ -86,8 +86,8 @@ public:
   integer_range(I begin, I end) : begin_{begin}, end_{end} {}
   using iterator = integer_iterator<I, one_sided>;
 
-  iterator begin() const { return begin_; }
-  iterator end() const { return end_; }
+  [[nodiscard]] iterator begin() const { return begin_; }
+  [[nodiscard]] iterator end() const { return end_; }
 
 private:
   iterator begin_;
@@ -98,11 +98,10 @@ private:
 // If end <= begin, then the range is empty.
 // The range has the type of the `end` integer; `begin` integer is cast to this type.
 
-template <typename Integer1,
-          typename Integer2,
+template <typename Integer1, typename Integer2,
           std::enable_if_t<std::is_integral_v<Integer1>, bool> = true,
           std::enable_if_t<std::is_integral_v<Integer2>, bool> = true>
-integer_range<Integer2> irange(Integer1 begin, Integer2 end) {
+[[maybe_unused]] integer_range<Integer2> irange(Integer1 begin, Integer2 end) {
   // If end <= begin then the range is empty; we can achieve this effect by choosing the larger
   // {begin, end} as the loop terminator
   return {
@@ -112,9 +111,8 @@ integer_range<Integer2> irange(Integer1 begin, Integer2 end) {
 
 // Creates an integer range for the half-open interval [0, end)
 // If end <= begin, then the range is empty
-template <typename Integer,
-          std::enable_if_t<std::is_integral_v<Integer>, bool> = true>
-integer_range<Integer, true> irange(Integer end) {
+template <typename Integer, std::enable_if_t<std::is_integral_v<Integer>, bool> = true>
+[[maybe_unused]] integer_range<Integer, true> irange(Integer end) {
   return {Integer{0}, end};
 }
 
@@ -138,4 +136,53 @@ TEST(irange_test, test1) {
 #endif
 
   EXPECT_TRUE(oss.str() == act_output);
+}
+
+TEST(irange_test, test2) {
+  testing::internal::CaptureStdout();
+  std::stringstream oss;
+
+  for (auto _ : detail::irange(10))
+    std::printf("Hello irange\n");
+
+  oss << "Hello irange\n"
+         "Hello irange\n"
+         "Hello irange\n"
+         "Hello irange\n"
+         "Hello irange\n"
+         "Hello irange\n"
+         "Hello irange\n"
+         "Hello irange\n"
+         "Hello irange\n"
+         "Hello irange\n";
+
+  auto act_output = testing::internal::GetCapturedStdout();
+
+#ifndef NDEBUG
+  debug_msg(oss, act_output);
+#endif
+
+  EXPECT_TRUE(oss.str() == act_output);
+}
+
+TEST(irange_test, test3) {
+  testing::internal::CaptureStdout();
+  std::stringstream oss;
+
+  for (auto i : detail::irange(3, 8))
+    std::cout << "index = " << i << '\n';
+
+  auto act_outupt = testing::internal::GetCapturedStdout();
+
+  oss << "index = 3\n"
+         "index = 4\n"
+         "index = 5\n"
+         "index = 6\n"
+         "index = 7\n";
+
+#ifndef NDEBUG
+  debug_msg(oss, act_outupt);
+#endif
+
+  EXPECT_TRUE(oss.str() == act_outupt);
 }
